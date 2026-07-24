@@ -21,6 +21,22 @@ The architect session never typed the code, and it doesn't take the lane's word 
 
 A frontier-model session spends most of its tokens typing code that doesn't need frontier judgment. The judgment — decomposition, interface design, verdicts on diffs — is worth the premium; the volume is not. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec, every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
 
+## Dependencies
+
+The minimum working setup is the first three rows — Claude Code, `jq`, and one authenticated lane CLI. Everything below that depends on which lanes you enable; preflight reports exactly what's missing.
+
+| Dependency | Needed by | Install |
+|---|---|---|
+| Claude Code with plugin support | everything | — |
+| `jq` | preflight and the grok-lane success gate | `brew install jq` |
+| [`grok`](https://x.ai/cli) CLI, authenticated | the 6 grok-harness lanes, including the default `grok` | x.ai/cli |
+| `codex` CLI, authenticated | the 6 codex-harness lanes | OpenAI's Codex CLI |
+| `claude` CLI | the 4 claude-harness lanes | already present with Claude Code |
+| [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) serving `127.0.0.1:8317` | 11 of the 16 shipped lanes | its README; those lanes fail at connect time without it |
+| `[model.*]` blocks in `~/.grok/config.toml` | the 5 grok-harness proxy lanes | copy `config/grok-config.example.toml` |
+| z.ai / Moonshot API keys in `~/.claude/.env` | `glm-cc` / `kimi-cc` | from each vendor |
+| `coreutils` (`gtimeout`) | optional — caps lane runtime | `brew install coreutils` |
+
 ## What you get
 
 - **`orchestration` skill** — the routing doctrine: decompose, write five-part specs, route each task to the best $/task lane that's adequate for it, verify evidence, consult the advisor at commitment boundaries.
@@ -30,12 +46,7 @@ A frontier-model session spends most of its tokens typing code that doesn't need
 
 ## Install
 
-Requirements:
-
-- Claude Code with plugin support
-- `jq` (`brew install jq`) — preflight exits without it, and grok-lane dispatches gate on it
-- At least one lane CLI installed and authenticated: [`grok`](https://x.ai/cli) (the default lane), `codex`, or `claude`
-- Optional: `coreutils` for `gtimeout` — without it, lane runs are uncapped
+Install the [dependencies](#dependencies) your lanes need, then:
 
 ```bash
 git clone https://github.com/suhaskashyaps/pitwall ~/.claude/plugins/pitwall
@@ -65,7 +76,7 @@ MOONSHOT_API_KEY=…   MOONSHOT_BASE_URL=…   # kimi-cc (Moonshot)
 CLIPROXY_BASE_URL=…  CLIPROXY_API_KEY=…    # every proxy-routed lane
 ```
 
-Eleven of the sixteen shipped lanes route through a local [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) gateway at `127.0.0.1:8317`, and the five grok-harness proxy lanes also need `[model.*]` blocks in `~/.grok/config.toml` — copy `config/grok-config.example.toml` there. Skip both if you only use the direct lanes. Details: [docs/lanes.md](docs/lanes.md).
+For the proxy-routed lanes, start CLIProxyAPI and copy `config/grok-config.example.toml` into `~/.grok/config.toml`. Skip both if you only use the direct lanes. Details: [docs/lanes.md](docs/lanes.md).
 
 Then check the fleet:
 
