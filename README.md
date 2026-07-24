@@ -9,7 +9,7 @@
 
 </div>
 
-Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes — each a named **model-harness**, a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI — with third-party models (GLM, Kimi) reached through a local gateway. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `kimi-grok` — a Moonshot model on xAI's CLI, routed through the local proxy — builds a rate limiter:
+Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness** — a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI. Third-party models (GLM, Kimi) join through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a separate proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `kimi-grok` — a Moonshot model on xAI's CLI, routed through the local proxy — builds a rate limiter:
 
 ```
 LANE REPORT (kimi-grok)
@@ -23,11 +23,11 @@ HARNESS SAID: wrote both files, no shell attempted — matches the diff. stopRea
 GAPS: none.
 ```
 
-The architect session never typed the code, and it doesn't take the lane's word for the result.
+The architect session never typed the code, and it doesn't take the lane's word for the result (`stopReason` is the harness's own turn-end signal — one of the gates `lane-runner` checks before believing anything).
 
 ## Why this exists
 
-A frontier-model session spends most of its tokens typing code that doesn't need frontier judgment. The judgment — decomposition, interface design, verdicts on diffs — is worth the premium; the volume is not. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec, every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
+A frontier-model session spends most of its tokens typing code that doesn't need frontier judgment. The judgment — decomposition, interface design, verdicts on diffs — is worth the premium; the volume is not. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec (objective, files, interfaces, constraints, verification), every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
 
 ## Dependencies
 
@@ -36,13 +36,15 @@ The first two rows are the whole minimum setup: Claude Code itself doubles as th
 | Dependency | Unlocks | Get it |
 |---|---|---|
 | Claude Code, with plugin support | the plugin itself, plus the 4 claude-harness lanes | [claude.com/claude-code](https://claude.com/claude-code) |
-| jq | preflight and the grok success gate | `brew install jq` |
+| jq | preflight, and validating grok-harness results | `brew install jq` |
 | Grok CLI, authenticated | the 6 grok-harness lanes, incl. the default | [x.ai/cli](https://x.ai/cli) |
 | Codex CLI, authenticated | the 6 codex-harness lanes | [openai/codex](https://github.com/openai/codex) |
 | CLIProxyAPI running on port 8317 | the 11 proxy-routed lanes | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) |
 | Model blocks in `~/.grok/config.toml` | the 5 grok-harness proxy lanes | copy [the shipped template](config/grok-config.example.toml) |
 | z.ai / Moonshot API keys | `glm-cc`, `kimi-cc` | create in each vendor's console, add to `~/.claude/.env` |
 | coreutils, for `gtimeout` | optional — caps lane runtime | `brew install coreutils` |
+
+Two steps are human-only: creating vendor API keys and each CLI's sign-in flow. A coding agent running this setup should hand those back to you.
 
 ## What you get
 
@@ -66,16 +68,16 @@ In Claude Code:
 /plugin install pitwall@pitwall
 ```
 
-Restart Claude Code (or `/reload-plugins`), then confirm `pitwall:lane-runner` appears in your agent list.
+Restart Claude Code (or `/reload-plugins`), then run `/agents` and confirm `pitwall:lane-runner` is listed.
 
-Create your lane config, or let the first dispatch seed it from the example:
+The first dispatch seeds `~/.claude/pitwall/lanes.json` from the example automatically. To run preflight before any dispatch, copy it yourself:
 
 ```bash
 mkdir -p ~/.claude/pitwall
 cp ~/.claude/plugins/pitwall/config/lanes.example.json ~/.claude/pitwall/lanes.json
 ```
 
-The three native lanes (`grok`, `codex-gpt56`, `claude-native`) need nothing else — they use each CLI's own auth. Shimmed lanes read credentials from `~/.claude/.env` (override with `PITWALL_ENV_FILE`); preflight and lane-runner load that file themselves, so secrets reach only the lane subprocess and never your ambient shell:
+Three lanes authenticate natively and need no keys: `claude-native` works with nothing beyond Claude Code itself, while `grok` and `codex-gpt56` need their CLI installed and signed in through its own login flow. Shimmed lanes read credentials from `~/.claude/.env` (override with `PITWALL_ENV_FILE`); preflight and lane-runner load that file themselves, so secrets reach only the lane subprocess and never your ambient shell:
 
 ```bash
 ZAI_API_KEY=…        ZAI_BASE_URL=…        # glm-cc (z.ai)
@@ -83,7 +85,7 @@ MOONSHOT_API_KEY=…   MOONSHOT_BASE_URL=…   # kimi-cc (Moonshot)
 CLIPROXY_BASE_URL=…  CLIPROXY_API_KEY=…    # every proxy-routed lane
 ```
 
-For the proxy-routed lanes, start CLIProxyAPI and copy `config/grok-config.example.toml` into `~/.grok/config.toml`. Skip both if you only use the direct lanes. Details: [docs/lanes.md](docs/lanes.md).
+For the proxy-routed lanes: install and start [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) with upstream accounts for the models you want it to serve (its README covers that), confirm it answers — `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8317/` should print `200` — then copy `config/grok-config.example.toml` to `~/.grok/config.toml` as-is. Skip all of this if you only use the direct lanes. Details: [docs/lanes.md](docs/lanes.md).
 
 Then check the fleet:
 
@@ -91,14 +93,16 @@ Then check the fleet:
 ~/.claude/plugins/pitwall/scripts/preflight-all.sh
 ```
 
-A lane reporting `MISSING(VAR)` means that credential is absent from your env file — correct reporting, not a bug. Preflight checks binaries and env vars only; it does not probe the proxy. Full runbook: [docs/verification.md](docs/verification.md).
+Every lane you plan to use should show `ok`/`ok`; with all sixteen configured, the footer reads `16/16 lanes ready`. A lane reporting `MISSING(VAR)` means that credential is absent from your env file — correct reporting, not a bug; add the variable and re-run. Preflight checks binaries and env vars only; it does not probe the proxy. Full runbook: [docs/verification.md](docs/verification.md).
 
 ## Usage
 
-Dispatch a task by sending the `lane-runner` agent a lane ID and a five-part spec:
+Dispatch by asking your session to hand a spec to the agent. In Claude Code, type:
 
 ```
-LANE: grok
+Dispatch this to the pitwall:lane-runner agent:
+
+LANE: claude-native
 
 Objective: Create /tmp/pitwall-test/health.py containing a function
 health() that returns the string "ok".
@@ -113,6 +117,8 @@ Constraints: one file, one function, work in /tmp/pitwall-test.
 
 Verification: cd /tmp/pitwall-test && python3 -c "from health import health; assert health() == 'ok'; print('PASS')"
 ```
+
+The session spawns `lane-runner` with the spec as its prompt. `LANE: claude-native` makes this work on the minimum setup — swap in any lane from your fleet. The dispatch succeeded when the report returns `STATUS: complete` and `VERIFIED:` quotes your verification command's own output. `STATUS: unavailable` names the exact missing piece — fix it, or re-dispatch to another lane.
 
 For multi-task builds, invoke the `pitwall:orchestration` skill and let the session route: independent specs fan out to parallel lanes, correctness-critical work goes cross-vendor, and high-stakes work races two lanes on the same spec.
 
@@ -151,11 +157,9 @@ Add a lane by editing `~/.claude/pitwall/lanes.json` — no plugin change:
 | `opus48-codex` | Codex CLI | claude-opus-4-8 | CLIProxyAPI via `model_providers` flags |
 | `sonnet5-codex` | Codex CLI | claude-sonnet-5 | CLIProxyAPI via `model_providers` flags |
 
-`grok` is not `groq`: the `grok` harness drives xAI's Grok CLI with native auth. `lane-runner` also supports a `groq` harness (Groq Inc.'s HTTP API, a different vendor), but no such lane ships.
-
 ### Cost notes
 
-To pick a model for a lane, start from [Artificial Analysis](https://artificialanalysis.ai): its Intelligence Index scores models on a common eval battery, and its cost-to-run-the-index figure works as a $/task proxy. A model earns a lane when it clears the quality bar for your task class at the lowest cost per task. Then measure on your own harnesses — in our samples, harness choice moved cost more than model choice, which no model-level benchmark captures.
+To pick a model for a lane, start from [Artificial Analysis](https://artificialanalysis.ai): its Intelligence Index scores models on a common eval battery, and its cost-to-run-the-index figure works as a $/task proxy. A model earns a lane when it clears the quality bar for your task class at the lowest cost per task. Then measure on your own harnesses — in our samples, harness choice moved cost more than model choice, which no model-level benchmark captures. Benchmarks shortlist the model; a live dispatch through the lane picks the harness.
 
 Measured once, on one machine, on the same trivial write task — directional, not a benchmark:
 
