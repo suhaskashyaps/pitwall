@@ -180,4 +180,4 @@ Pitwall's trade: cross-vendor agentic harnesses as first-class delegation target
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). MIT — see [LICENSE](LICENSE).
 
-Pitwall began as a fork of [DannyMac180/fable-advisor](https://github.com/DannyMac180/fable-advisor), moving the lane inventory from hardcoded agent files into user config. If you still have the upstream plugin installed, disable it first — both define an agent named `fable-advisor` and a skill named `orchestration`.
+Pitwall's primary inspiration is [Omnigent](https://github.com/omnigent-ai/omnigent), the meta-harness that treats coding-agent harnesses as swappable parts. The code began as a fork of [DannyMac180/fable-advisor](https://github.com/DannyMac180/fable-advisor), moving the lane inventory from hardcoded agent files into user config. If you still have the upstream plugin installed, disable it first — both define an agent named `fable-advisor` and a skill named `orchestration`.
