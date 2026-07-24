@@ -31,18 +31,17 @@ A frontier-model session spends most of its tokens typing code that doesn't need
 
 ## Dependencies
 
-The minimum working setup is the first three rows — Claude Code, `jq`, and one authenticated lane CLI. Everything below that depends on which lanes you enable; preflight reports exactly what's missing.
+The first two rows are the whole minimum setup: Claude Code itself doubles as the CLI behind the four claude-harness lanes, so with `jq` installed you already have a working lane (`claude-native`). Each row after that unlocks more lanes — install only what your lanes need; preflight reports exactly what's missing.
 
-| Dependency | Needed by | Get it |
+| Dependency | Unlocks | Get it |
 |---|---|---|
-| Claude Code, with plugin support | everything | — |
+| Claude Code, with plugin support | the plugin itself, plus the 4 claude-harness lanes | [claude.com/claude-code](https://claude.com/claude-code) |
 | jq | preflight and the grok success gate | `brew install jq` |
-| Grok CLI, authenticated | 6 grok-harness lanes, incl. the default | [x.ai/cli](https://x.ai/cli) |
-| Codex CLI, authenticated | 6 codex-harness lanes | [openai/codex](https://github.com/openai/codex) |
-| Claude Code CLI | 4 claude-harness lanes | already installed |
-| CLIProxyAPI on port 8317 | 11 of the 16 shipped lanes | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) |
-| Model blocks in `~/.grok/config.toml` | 5 grok-harness proxy lanes | copy [the shipped template](config/grok-config.example.toml) |
-| z.ai and Moonshot API keys | `glm-cc`, `kimi-cc` | vendor consoles, into `~/.claude/.env` |
+| Grok CLI, authenticated | the 6 grok-harness lanes, incl. the default | [x.ai/cli](https://x.ai/cli) |
+| Codex CLI, authenticated | the 6 codex-harness lanes | [openai/codex](https://github.com/openai/codex) |
+| CLIProxyAPI running on port 8317 | the 11 proxy-routed lanes | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) |
+| Model blocks in `~/.grok/config.toml` | the 5 grok-harness proxy lanes | copy [the shipped template](config/grok-config.example.toml) |
+| z.ai / Moonshot API keys | `glm-cc`, `kimi-cc` | create in each vendor's console, add to `~/.claude/.env` |
 | coreutils, for `gtimeout` | optional — caps lane runtime | `brew install coreutils` |
 
 ## What you get
