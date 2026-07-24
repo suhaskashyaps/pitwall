@@ -34,7 +34,7 @@ jq . ~/.claude/plugins/pitwall/config/lanes.example.json > /dev/null && echo OK
 jq . ~/.claude/pitwall/lanes.json > /dev/null && echo OK
 ```
 
-Expect four `OK` lines. If `~/.claude/pitwall/lanes.json` is missing, that is the one acceptable failure — first dispatch has not run yet. Copy the example into place:
+Expect four `OK` lines. If `~/.claude/pitwall/lanes.json` is missing, that is the one acceptable failure: first dispatch has not run yet. Copy the example into place:
 
 ```bash
 mkdir -p ~/.claude/pitwall
@@ -78,7 +78,7 @@ Registration takes effect at session start. In a **new** session:
 
 If these are absent:
 
-1. The plugin is not in `settings.json`'s `enabledPlugins`. Listing it in `installed_plugins.json` alone is not enough — enable it in settings.
+1. The plugin is not in `settings.json`'s `enabledPlugins`. Listing it in `installed_plugins.json` alone is not enough; enable it in settings.
 2. The marketplace source type is wrong. Use `directory` (pointing at the plugin root), not `local`. `local` is not a valid source type and is silently rejected. Accepted types include `url`, `github`, `git`, `npm`, `file`, `directory`, and `settings`.
 
 ---
@@ -91,7 +91,7 @@ In a session where `pitwall:lane-runner` is available, dispatch this exact task 
 LANE: grok
 
 Objective: Create /tmp/pitwall-test/health.py containing a function
-health() that returns the string "ok". Trivial task — the point is to
+health() that returns the string "ok". Trivial task: the point is to
 exercise the dispatch loop.
 
 Files: create /tmp/pitwall-test/health.py
@@ -109,7 +109,7 @@ Expected outcomes:
 
 1. `lane-runner` returns a report headed `LANE REPORT (grok)` with a `MODEL-HARNESS:` line naming the combination it ran, `STATUS: complete`, a `CHANGES:` line for `health.py`, and a `VERIFIED:` line showing the verification command's actual `PASS` output, citing the observed `stopReason`.
 2. `/tmp/pitwall-test/health.py` exists, and re-running the verification command by hand prints `PASS`.
-3. If grok is unavailable, expect `STATUS: unavailable` with the exact reason — not a fallback where lane-runner writes the file itself. If lane-runner implements the task directly, that is a critical defect: report it.
+3. If grok is unavailable, expect `STATUS: unavailable` with the exact reason, not a fallback where lane-runner writes the file itself. If lane-runner implements the task directly, that is a critical defect: report it.
 
 ---
 

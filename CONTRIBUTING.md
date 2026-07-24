@@ -23,7 +23,7 @@ How to fix a bug, add a lane, or add a harness in pitwall.
 }
 ```
 
-Merge those keys into your existing settings; do not replace the whole file. Write `path` as an absolute path (`/home/you/...`, not `~`) — the registered value is stored expanded.
+Merge those keys into your existing settings; do not replace the whole file. Write `path` as an absolute path (`/home/you/...`, not `~`): the registered value is stored expanded.
 
 3. Restart Claude Code, or run `/reload-plugins`.
 4. Confirm `pitwall:lane-runner` and `pitwall:fable-advisor` appear in the agent list.

@@ -4,7 +4,7 @@ Pitwall makes a Fable 5 session an architect over cheaper external CLI agents ("
 
 ## Premise
 
-The session runs the most expensive model as the architect. Its tokens go to decomposition, specs, routing, and verdicts. Implementation volume goes to lanes — named model-harness combinations (a model paired with the CLI harness that drives it), driven headlessly under a shared contract. The economics only work if the architect's token volume stays low: emit judgment, keep context lean, reason once then hand off. Typing implementation code in the architect is a failure of the pattern.
+The session runs the most expensive model as the architect. Its tokens go to decomposition, specs, routing, and verdicts. Implementation volume goes to lanes: named model-harness combinations (a model paired with the CLI harness that drives it), driven headlessly under a shared contract. The economics only work if the architect's token volume stays low: emit judgment, keep context lean, reason once then hand off. Typing implementation code in the architect is a failure of the pattern.
 
 ## Three components
 
@@ -24,11 +24,11 @@ Read-only second opinion at commitment boundaries: architecture, migrations, API
 
 Implementers share none of the architect's conversation context. Every delegation carries all five parts:
 
-1. **Objective** — what to build or change, one paragraph
-2. **Files** — exact paths to create or modify
-3. **Interfaces** — signatures, types, or API shapes the code must match
-4. **Constraints** — conventions and things not to touch
-5. **Verification** — the command(s) that prove it works
+1. **Objective**: what to build or change, one paragraph
+2. **Files**: exact paths to create or modify
+3. **Interfaces**: signatures, types, or API shapes the code must match
+4. **Constraints**: conventions and things not to touch
+5. **Verification**: the command(s) that prove it works
 
 A spec you cannot finish writing means the decision is not made yet. That is architect work, not a reason to hand ambiguity to a cheaper model.
 
@@ -59,12 +59,12 @@ When a lane cannot run (missing binary, missing env source, unknown id, cancelle
 
 **One generic lane-runner instead of one agent per lane.** Lane ids must never be special-cased in agent logic. Config fields drive harness, model, env shim, flags, capabilities, and timeout. The inventory can change without rewriting dispatcher prose.
 
-**Harnesses run under `acceptEdits` (or equivalent workspace-write).** The harness can write files; it cannot run arbitrary shell. Lane-runner creates parent directories before dispatch and runs verification itself, so evidence is independently produced. Corollary for the grok harness: exit code 0 alone is not success. Success is gated on the JSON `stopReason` — anything but `EndTurn` (especially `Cancelled`) is failure, because a cancelled turn can exit 0 with empty output.
+**Harnesses run under `acceptEdits` (or equivalent workspace-write).** The harness can write files; it cannot run arbitrary shell. Lane-runner creates parent directories before dispatch and runs verification itself, so evidence is independently produced. Corollary for the grok harness: exit code 0 alone is not success. Success is gated on the JSON `stopReason`: anything but `EndTurn` (especially `Cancelled`) is failure, because a cancelled turn can exit 0 with empty output.
 
 **The harness decides the wire protocol.** Claude speaks Anthropic Messages; codex speaks OpenAI Responses only; grok speaks xAI's protocol. A model-harness works only if the model's endpoint speaks that protocol. A local gateway that translates protocols is what unlocks third-party models on a given harness.
 
 ## What the plugin does not do
 
 - No fallback implementation by the dispatcher when a lane is unavailable.
-- No automatic lane failover without reporting — every substitution is an explicit orchestrator decision.
+- No automatic lane failover without reporting: every substitution is an explicit orchestrator decision.
 - No support for running the architect on a cheaper model. The session is Fable 5 by design; the premium is for judgment, not for typing volume.
