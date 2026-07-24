@@ -37,6 +37,10 @@ Source of truth: the schema table in `agents/lane-runner.md` and the shipped exa
 
 `suggest-only` marks lanes that return code in a response body but cannot edit files or run verification. No shipped lane uses it — it exists for HTTP-only backends you add yourself (see the `groq` harness below).
 
+### Choosing a model for a lane
+
+Rank candidates on [Artificial Analysis](https://artificialanalysis.ai): the Intelligence Index gives the quality bar, and the cost to run the index gives a $/task proxy. Pick the model with the lowest cost per task that clears the bar for the work you'll route to it. Treat that as the starting order, not the verdict — the harness carries its own token overhead (see the README's cost notes), so confirm with a live dispatch through the lane before relying on it.
+
 ### Env indirection
 
 Values in `env` are **env-var names**, not secrets. Example:

@@ -148,6 +148,8 @@ Add a lane by editing `~/.claude/pitwall/lanes.json` — no plugin change:
 
 ### Cost notes
 
+To pick a model for a lane, start from [Artificial Analysis](https://artificialanalysis.ai): its Intelligence Index scores models on a common eval battery, and its cost-to-run-the-index figure works as a $/task proxy. A model earns a lane when it clears the quality bar for your task class at the lowest cost per task. Then measure on your own harnesses — in our samples, harness choice moved cost more than model choice, which no model-level benchmark captures.
+
 Measured once, on one machine, on the same trivial write task — directional, not a benchmark:
 
 - The same Anthropic model cost ~2x through the codex harness versus the grok harness (143k vs 67k tokens). Harness choice moved cost more than model choice.
