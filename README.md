@@ -1,6 +1,6 @@
 # pitwall
 
-Route implementation work from a Claude Code session to cheaper cross-vendor CLI coding agents.
+A frontier architect specs, routes, and verifies; the best $/task model-harness does the typing.
 
 Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes — each a named **model-harness**, a model paired with the CLI harness that drives it: xAI's `grok`, OpenAI's `codex`, Anthropic's `claude`, with third-party models (GLM, Kimi) reached through a local gateway. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence:
 
@@ -19,11 +19,11 @@ The architect session never typed the code, and it doesn't take the lane's word 
 
 ## Why this exists
 
-A frontier-model session spends most of its tokens typing code a cheaper model could type as well. The judgment — decomposition, interface design, verdicts on diffs — is worth the premium; the volume is not. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec, every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
+A frontier-model session spends most of its tokens typing code that doesn't need frontier judgment. The judgment — decomposition, interface design, verdicts on diffs — is worth the premium; the volume is not. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec, every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
 
 ## What you get
 
-- **`orchestration` skill** — the routing doctrine: decompose, write five-part specs, route to the cheapest adequate lane, verify evidence, consult the advisor at commitment boundaries.
+- **`orchestration` skill** — the routing doctrine: decompose, write five-part specs, route each task to the best $/task lane that's adequate for it, verify evidence, consult the advisor at commitment boundaries.
 - **`lane-runner` agent** — one generic dispatcher. Resolves a lane from `lanes.json`, preflights the harness, invokes it headlessly with per-lane env, verifies independently, reports in the fixed `LANE REPORT` format — every report names the model-harness it ran.
 - **`fable-advisor` agent** — a read-only second-opinion advisor for commitment boundaries. It advises; it never implements.
 - **`lanes.json`** — the fleet, in user config. Add, remove, or repoint lanes by editing one file.
