@@ -138,24 +138,24 @@ Add a lane by editing `~/.claude/pitwall/lanes.json` — no plugin change:
 
 ## Shipped lanes
 
-| Lane | Harness | Model | Auth |
+| Lane | Model | Harness | Auth |
 |---|---|---|---|
-| `grok` | Grok CLI (xAI) | (CLI default) | native, no API key |
-| `codex-gpt56` | Codex CLI | gpt-5.6-sol | native |
-| `claude-native` | Claude Code CLI | (CLI default) | native |
-| `glm-cc` | Claude Code CLI | glm-5.2 | z.ai via env shim |
-| `kimi-cc` | Claude Code CLI | kimi-k3 | Moonshot via env shim |
-| `gpt56-cc` | Claude Code CLI | gpt-5.6-sol | CLIProxyAPI via env shim |
-| `glm-grok` | Grok CLI | glm-5.2 | CLIProxyAPI via `~/.grok/config.toml` |
-| `gpt56-grok` | Grok CLI | gpt-5.6-sol | CLIProxyAPI via `~/.grok/config.toml` |
-| `kimi-grok` | Grok CLI | kimi-k3 | CLIProxyAPI via `~/.grok/config.toml` |
-| `opus48-grok` | Grok CLI | claude-opus-4-8 | CLIProxyAPI via `~/.grok/config.toml` |
-| `sonnet5-grok` | Grok CLI | claude-sonnet-5 | CLIProxyAPI via `~/.grok/config.toml` |
-| `glm-codex` | Codex CLI | glm-5.2 | CLIProxyAPI via `model_providers` flags |
-| `grok45-codex` | Codex CLI | grok-4.5 | CLIProxyAPI via `model_providers` flags |
-| `kimi-codex` | Codex CLI | kimi-k3 | CLIProxyAPI via `model_providers` flags |
-| `opus48-codex` | Codex CLI | claude-opus-4-8 | CLIProxyAPI via `model_providers` flags |
-| `sonnet5-codex` | Codex CLI | claude-sonnet-5 | CLIProxyAPI via `model_providers` flags |
+| `grok` | (CLI default) | Grok CLI (xAI) | native, no API key |
+| `codex-gpt56` | gpt-5.6-sol | Codex CLI | native |
+| `claude-native` | (CLI default) | Claude Code CLI | native |
+| `glm-cc` | glm-5.2 | Claude Code CLI | z.ai via env shim |
+| `kimi-cc` | kimi-k3 | Claude Code CLI | Moonshot via env shim |
+| `gpt56-cc` | gpt-5.6-sol | Claude Code CLI | CLIProxyAPI via env shim |
+| `glm-grok` | glm-5.2 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
+| `gpt56-grok` | gpt-5.6-sol | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
+| `kimi-grok` | kimi-k3 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
+| `opus48-grok` | claude-opus-4-8 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
+| `sonnet5-grok` | claude-sonnet-5 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
+| `glm-codex` | glm-5.2 | Codex CLI | CLIProxyAPI via `model_providers` flags |
+| `grok45-codex` | grok-4.5 | Codex CLI | CLIProxyAPI via `model_providers` flags |
+| `kimi-codex` | kimi-k3 | Codex CLI | CLIProxyAPI via `model_providers` flags |
+| `opus48-codex` | claude-opus-4-8 | Codex CLI | CLIProxyAPI via `model_providers` flags |
+| `sonnet5-codex` | claude-sonnet-5 | Codex CLI | CLIProxyAPI via `model_providers` flags |
 
 ### Cost notes
 
