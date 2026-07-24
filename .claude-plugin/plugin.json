@@ -1,0 +1,9 @@
+{
+  "name": "pitwall",
+  "version": "1.0.0",
+  "description": "Fable 5 orchestrator over a configurable fleet of implementation lanes (grok, codex, claude harnesses + third-party models via env shims). Fork of fable-advisor with config-driven lanes.",
+  "author": {
+    "name": "Suhas"
+  },
+  "keywords": ["orchestration", "multi-agent", "delegation", "lanes", "model-routing"]
+}

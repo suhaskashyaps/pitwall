@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "default_lane": "grok",
+  "lanes": {
+    "grok": {
+      "harness": "grok",
+      "description": "Default routine lane — xAI Grok via the Grok Build CLI (headless), native CLI auth, no API key",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "codex-gpt56": {
+      "harness": "codex",
+      "model": "gpt-5.6-sol",
+      "description": "Cross-vendor correctness lane — GPT-5.6 Sol via codex CLI, high reasoning, native auth",
+      "extra_flags": [
+        "-c",
+        "model_reasoning_effort=high"
+      ],
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "claude-native": {
+      "harness": "claude",
+      "description": "Native Claude via claude CLI, session auth",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "glm-cc": {
+      "harness": "claude",
+      "model": "glm-5.2",
+      "env": {
+        "ANTHROPIC_BASE_URL": "ZAI_BASE_URL",
+        "ANTHROPIC_AUTH_TOKEN": "ZAI_API_KEY"
+      },
+      "description": "GLM 5.2 via claude CLI, z.ai Anthropic-compat endpoint",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "kimi-cc": {
+      "harness": "claude",
+      "model": "kimi-k3",
+      "env": {
+        "ANTHROPIC_BASE_URL": "MOONSHOT_BASE_URL",
+        "ANTHROPIC_AUTH_TOKEN": "MOONSHOT_API_KEY"
+      },
+      "description": "Kimi 3 via claude CLI, Moonshot Anthropic-compat endpoint",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "gpt56-cc": {
+      "harness": "claude",
+      "model": "gpt-5.6-sol",
+      "env": {
+        "ANTHROPIC_BASE_URL": "CLIPROXY_BASE_URL",
+        "ANTHROPIC_AUTH_TOKEN": "CLIPROXY_API_KEY"
+      },
+      "description": "GPT-5.6 Sol via claude CLI, local CLIProxyAPI Anthropic-compat endpoint",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "glm-grok": {
+      "harness": "grok",
+      "model": "glm-5.2",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "description": "GLM 5.2 via Grok Build CLI; ~/.grok/config.toml routes this model id to the local CLIProxyAPI",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "glm-codex": {
+      "harness": "codex",
+      "model": "glm-5.2",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "extra_flags": [
+        "-c",
+        "model_provider=pwproxy",
+        "-c",
+        "model_providers.pwproxy.name=CLIProxyAPI",
+        "-c",
+        "model_providers.pwproxy.base_url=http://127.0.0.1:8317/v1",
+        "-c",
+        "model_providers.pwproxy.wire_api=responses",
+        "-c",
+        "model_providers.pwproxy.env_key=CLIPROXY_API_KEY",
+        "-c",
+        "model_providers.pwproxy.stream_idle_timeout_ms=600000"
+      ],
+      "description": "GLM 5.2 via codex CLI against the local CLIProxyAPI Responses endpoint; self-contained provider block, requires proxy on 127.0.0.1:8317",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "grok45-codex": {
+      "harness": "codex",
+      "model": "grok-4.5",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "extra_flags": [
+        "-c",
+        "model_provider=pwproxy",
+        "-c",
+        "model_providers.pwproxy.name=CLIProxyAPI",
+        "-c",
+        "model_providers.pwproxy.base_url=http://127.0.0.1:8317/v1",
+        "-c",
+        "model_providers.pwproxy.wire_api=responses",
+        "-c",
+        "model_providers.pwproxy.env_key=CLIPROXY_API_KEY",
+        "-c",
+        "model_providers.pwproxy.stream_idle_timeout_ms=600000",
+        "-c",
+        "model_reasoning_effort=medium"
+      ],
+      "description": "Grok 4.5 via codex CLI against the local CLIProxyAPI Responses endpoint; reasoning effort pinned to medium (codex defaults unknown models to xhigh, ~17x cost)",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "kimi-codex": {
+      "harness": "codex",
+      "model": "kimi-k3",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "extra_flags": [
+        "-c",
+        "model_provider=pwproxy",
+        "-c",
+        "model_providers.pwproxy.name=CLIProxyAPI",
+        "-c",
+        "model_providers.pwproxy.base_url=http://127.0.0.1:8317/v1",
+        "-c",
+        "model_providers.pwproxy.wire_api=responses",
+        "-c",
+        "model_providers.pwproxy.env_key=CLIPROXY_API_KEY",
+        "-c",
+        "model_providers.pwproxy.stream_idle_timeout_ms=600000",
+        "-c",
+        "model_reasoning_effort=medium"
+      ],
+      "description": "Kimi K3 via codex CLI against the local CLIProxyAPI Responses endpoint; reasoning effort pinned to medium (codex defaults unknown models to xhigh)",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "gpt56-grok": {
+      "harness": "grok",
+      "model": "gpt-5.6-sol",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "description": "GPT-5.6 Sol via Grok Build CLI, routed to CLIProxyAPI by ~/.grok/config.toml; lowest token footprint of the grok-harness pairings",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "kimi-grok": {
+      "harness": "grok",
+      "model": "kimi-k3",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "description": "Kimi K3 via Grok Build CLI, routed to CLIProxyAPI by ~/.grok/config.toml; note it omits trailing newlines on written files",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "opus48-grok": {
+      "harness": "grok",
+      "model": "claude-opus-4-8",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "description": "Claude Opus 4.8 via Grok Build CLI, routed to CLIProxyAPI; ~1.7x the input tokens of the xAI-family pairings",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "sonnet5-grok": {
+      "harness": "grok",
+      "model": "claude-sonnet-5",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "description": "Claude Sonnet 5 via Grok Build CLI, routed to CLIProxyAPI; same input footprint as the Opus pairing, cheaper per token",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "opus48-codex": {
+      "harness": "codex",
+      "model": "claude-opus-4-8",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "extra_flags": [
+        "-c",
+        "model_provider=pwproxy",
+        "-c",
+        "model_providers.pwproxy.name=CLIProxyAPI",
+        "-c",
+        "model_providers.pwproxy.base_url=http://127.0.0.1:8317/v1",
+        "-c",
+        "model_providers.pwproxy.wire_api=responses",
+        "-c",
+        "model_providers.pwproxy.env_key=CLIPROXY_API_KEY",
+        "-c",
+        "model_providers.pwproxy.stream_idle_timeout_ms=600000",
+        "-c",
+        "model_reasoning_effort=medium"
+      ],
+      "description": "Claude Opus 4.8 via codex CLI against the CLIProxyAPI Responses endpoint; reasoning effort pinned to medium",
+      "capabilities": [
+        "edit"
+      ]
+    },
+    "sonnet5-codex": {
+      "harness": "codex",
+      "model": "claude-sonnet-5",
+      "env": {
+        "CLIPROXY_API_KEY": "CLIPROXY_API_KEY"
+      },
+      "extra_flags": [
+        "-c",
+        "model_provider=pwproxy",
+        "-c",
+        "model_providers.pwproxy.name=CLIProxyAPI",
+        "-c",
+        "model_providers.pwproxy.base_url=http://127.0.0.1:8317/v1",
+        "-c",
+        "model_providers.pwproxy.wire_api=responses",
+        "-c",
+        "model_providers.pwproxy.env_key=CLIPROXY_API_KEY",
+        "-c",
+        "model_providers.pwproxy.stream_idle_timeout_ms=600000",
+        "-c",
+        "model_reasoning_effort=medium"
+      ],
+      "description": "Claude Sonnet 5 via codex CLI against the CLIProxyAPI Responses endpoint; reasoning effort pinned to medium",
+      "capabilities": [
+        "edit"
+      ]
+    }
+  }
+}

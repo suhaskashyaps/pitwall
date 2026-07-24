@@ -1,0 +1,16 @@
+{
+  "name": "pitwall",
+  "metadata": {
+    "description": "Local marketplace for the pitwall plugin (standalone fork of fable-advisor with config-driven lanes)."
+  },
+  "owner": {
+    "name": "Suhas"
+  },
+  "plugins": [
+    {
+      "name": "pitwall",
+      "source": "./",
+      "description": "Fable 5 orchestrator over a configurable fleet of implementation lanes (grok, codex, claude harnesses + third-party models via env shims)."
+    }
+  ]
+}
