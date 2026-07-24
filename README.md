@@ -1,17 +1,25 @@
+<div align="center">
+
 # pitwall
 
-A frontier architect specs, routes, and verifies; the best $/task model-harness does the typing.
+**A frontier architect specs, routes, and verifies; the best $/task model-harness does the typing.**
 
-Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes — each a named **model-harness**, a model paired with the CLI harness that drives it: xAI's `grok`, OpenAI's `codex`, Anthropic's `claude`, with third-party models (GLM, Kimi) reached through a local gateway. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence:
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-d97757.svg)](https://code.claude.com/docs)
+
+</div>
+
+Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes — each a named **model-harness**, a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI — with third-party models (GLM, Kimi) reached through a local gateway. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `kimi-grok` — a Moonshot model on xAI's CLI, routed through the local proxy — builds a rate limiter:
 
 ```
-LANE REPORT (grok)
-MODEL-HARNESS: harness default on the grok harness
+LANE REPORT (kimi-grok)
+MODEL-HARNESS: kimi-k3 on the grok harness
 STATUS: complete
-OBJECTIVE: Create /tmp/pitwall-test/health.py with a health() function returning "ok".
-CHANGES: /tmp/pitwall-test/health.py — new file, defines def health() -> str (did not exist pre-dispatch).
-VERIFIED: re-ran `python3 -c "from health import health; assert health() == 'ok'; print('PASS')"` myself → PASS
-HARNESS SAID: "Created one file and verified it" — matches observed diff. stopReason was EndTurn.
+OBJECTIVE: Thread-safe token-bucket rate limiter, stdlib only, with a fake-clock test suite.
+CHANGES: ratelimit.py — TokenBucket: lazy refill, capacity-capped, lock-guarded, injectable clock.
+         test_ratelimit.py — 4 tests: burst-then-denial, refill, idle cap, 8-thread concurrency.
+VERIFIED: re-ran `python3 test_ratelimit.py` myself → 4/4 tests passed
+HARNESS SAID: wrote both files, no shell attempted — matches the diff. stopReason was EndTurn.
 GAPS: none.
 ```
 
@@ -25,17 +33,17 @@ A frontier-model session spends most of its tokens typing code that doesn't need
 
 The minimum working setup is the first three rows — Claude Code, `jq`, and one authenticated lane CLI. Everything below that depends on which lanes you enable; preflight reports exactly what's missing.
 
-| Dependency | Needed by | Install |
+| Dependency | Needed by | Get it |
 |---|---|---|
-| Claude Code with plugin support | everything | — |
-| `jq` | preflight and the grok-lane success gate | `brew install jq` |
-| [`grok`](https://x.ai/cli) CLI, authenticated | the 6 grok-harness lanes, including the default `grok` | x.ai/cli |
-| `codex` CLI, authenticated | the 6 codex-harness lanes | OpenAI's Codex CLI |
-| `claude` CLI | the 4 claude-harness lanes | already present with Claude Code |
-| [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) serving `127.0.0.1:8317` | 11 of the 16 shipped lanes | its README; those lanes fail at connect time without it |
-| `[model.*]` blocks in `~/.grok/config.toml` | the 5 grok-harness proxy lanes | copy `config/grok-config.example.toml` |
-| z.ai / Moonshot API keys in `~/.claude/.env` | `glm-cc` / `kimi-cc` | from each vendor |
-| `coreutils` (`gtimeout`) | optional — caps lane runtime | `brew install coreutils` |
+| Claude Code, with plugin support | everything | — |
+| jq | preflight and the grok success gate | `brew install jq` |
+| Grok CLI, authenticated | 6 grok-harness lanes, incl. the default | [x.ai/cli](https://x.ai/cli) |
+| Codex CLI, authenticated | 6 codex-harness lanes | [openai/codex](https://github.com/openai/codex) |
+| Claude Code CLI | 4 claude-harness lanes | already installed |
+| CLIProxyAPI on port 8317 | 11 of the 16 shipped lanes | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) |
+| Model blocks in `~/.grok/config.toml` | 5 grok-harness proxy lanes | copy [the shipped template](config/grok-config.example.toml) |
+| z.ai and Moonshot API keys | `glm-cc`, `kimi-cc` | vendor consoles, into `~/.claude/.env` |
+| coreutils, for `gtimeout` | optional — caps lane runtime | `brew install coreutils` |
 
 ## What you get
 
@@ -127,24 +135,24 @@ Add a lane by editing `~/.claude/pitwall/lanes.json` — no plugin change:
 
 | Lane | Harness | Model | Auth |
 |---|---|---|---|
-| `grok` | Grok Build CLI (xAI) | (CLI default) | native, no API key |
-| `codex-gpt56` | codex CLI | gpt-5.6-sol | native |
-| `claude-native` | claude CLI | (CLI default) | native |
-| `glm-cc` | claude CLI | glm-5.2 | z.ai via env shim |
-| `kimi-cc` | claude CLI | kimi-k3 | Moonshot via env shim |
-| `gpt56-cc` | claude CLI | gpt-5.6-sol | CLIProxyAPI via env shim |
-| `glm-grok` | Grok Build CLI | glm-5.2 | CLIProxyAPI via `~/.grok/config.toml` |
-| `gpt56-grok` | Grok Build CLI | gpt-5.6-sol | CLIProxyAPI via `~/.grok/config.toml` |
-| `kimi-grok` | Grok Build CLI | kimi-k3 | CLIProxyAPI via `~/.grok/config.toml` |
-| `opus48-grok` | Grok Build CLI | claude-opus-4-8 | CLIProxyAPI via `~/.grok/config.toml` |
-| `sonnet5-grok` | Grok Build CLI | claude-sonnet-5 | CLIProxyAPI via `~/.grok/config.toml` |
-| `glm-codex` | codex CLI | glm-5.2 | CLIProxyAPI via `model_providers` flags |
-| `grok45-codex` | codex CLI | grok-4.5 | CLIProxyAPI via `model_providers` flags |
-| `kimi-codex` | codex CLI | kimi-k3 | CLIProxyAPI via `model_providers` flags |
-| `opus48-codex` | codex CLI | claude-opus-4-8 | CLIProxyAPI via `model_providers` flags |
-| `sonnet5-codex` | codex CLI | claude-sonnet-5 | CLIProxyAPI via `model_providers` flags |
+| `grok` | Grok CLI (xAI) | (CLI default) | native, no API key |
+| `codex-gpt56` | Codex CLI | gpt-5.6-sol | native |
+| `claude-native` | Claude Code CLI | (CLI default) | native |
+| `glm-cc` | Claude Code CLI | glm-5.2 | z.ai via env shim |
+| `kimi-cc` | Claude Code CLI | kimi-k3 | Moonshot via env shim |
+| `gpt56-cc` | Claude Code CLI | gpt-5.6-sol | CLIProxyAPI via env shim |
+| `glm-grok` | Grok CLI | glm-5.2 | CLIProxyAPI via `~/.grok/config.toml` |
+| `gpt56-grok` | Grok CLI | gpt-5.6-sol | CLIProxyAPI via `~/.grok/config.toml` |
+| `kimi-grok` | Grok CLI | kimi-k3 | CLIProxyAPI via `~/.grok/config.toml` |
+| `opus48-grok` | Grok CLI | claude-opus-4-8 | CLIProxyAPI via `~/.grok/config.toml` |
+| `sonnet5-grok` | Grok CLI | claude-sonnet-5 | CLIProxyAPI via `~/.grok/config.toml` |
+| `glm-codex` | Codex CLI | glm-5.2 | CLIProxyAPI via `model_providers` flags |
+| `grok45-codex` | Codex CLI | grok-4.5 | CLIProxyAPI via `model_providers` flags |
+| `kimi-codex` | Codex CLI | kimi-k3 | CLIProxyAPI via `model_providers` flags |
+| `opus48-codex` | Codex CLI | claude-opus-4-8 | CLIProxyAPI via `model_providers` flags |
+| `sonnet5-codex` | Codex CLI | claude-sonnet-5 | CLIProxyAPI via `model_providers` flags |
 
-`grok` is not `groq`: the `grok` harness drives xAI's Grok Build CLI with native auth. `lane-runner` also supports a `groq` harness (Groq Inc.'s HTTP API, a different vendor), but no such lane ships.
+`grok` is not `groq`: the `grok` harness drives xAI's Grok CLI with native auth. `lane-runner` also supports a `groq` harness (Groq Inc.'s HTTP API, a different vendor), but no such lane ships.
 
 ### Cost notes
 
