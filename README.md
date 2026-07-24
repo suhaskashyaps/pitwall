@@ -9,11 +9,11 @@
 
 </div>
 
-Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness** — a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI. Third-party models (GLM, Kimi) join through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a separate proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `kimi-grok` — a Moonshot model on xAI's CLI, routed through the local proxy — builds a rate limiter:
+Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness** — a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI. Third-party models join either through direct Anthropic-compatible endpoints or through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a separate proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `glm-grok` — a GLM model on xAI's CLI, routed through the local proxy — builds a rate limiter:
 
 ```
-LANE REPORT (kimi-grok)
-MODEL-HARNESS: kimi-k3 on the grok harness
+LANE REPORT (glm-grok)
+MODEL-HARNESS: glm-5.2 on the grok harness
 STATUS: complete
 OBJECTIVE: Thread-safe token-bucket rate limiter, stdlib only, with a fake-clock test suite.
 CHANGES: ratelimit.py — TokenBucket: lazy refill, capacity-capped, lock-guarded, injectable clock.
@@ -31,16 +31,16 @@ A frontier-model session spends most of its tokens typing code that doesn't need
 
 ## Dependencies
 
-The first two rows are the whole minimum setup: Claude Code itself doubles as the CLI behind the four claude-harness lanes, so with `jq` installed you already have a working lane (`claude-native`). Each row after that unlocks more lanes — install only what your lanes need; preflight reports exactly what's missing.
+The first two rows are the whole minimum setup: Claude Code itself doubles as the CLI behind the three claude-harness lanes, so with `jq` installed you already have a working lane (`claude-native`). Each row after that unlocks more lanes — install only what your lanes need. Preflight reports missing binaries and env vars; proxy connectivity and grok model blocks are separate checks.
 
 | Dependency | Unlocks | Get it |
 |---|---|---|
-| Claude Code, with plugin support | the plugin itself, plus the 4 claude-harness lanes | [claude.com/claude-code](https://claude.com/claude-code) |
+| Claude Code, with plugin support | the plugin itself, plus the 3 claude-harness lanes | [claude.com/claude-code](https://claude.com/claude-code) |
 | jq | preflight, and validating grok-harness results | `brew install jq` |
-| Grok CLI, authenticated | the 6 grok-harness lanes, incl. the default | [x.ai/cli](https://x.ai/cli) |
-| Codex CLI, authenticated | the 6 codex-harness lanes | [openai/codex](https://github.com/openai/codex) |
-| CLIProxyAPI running on port 8317 | the 11 proxy-routed lanes | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) |
-| Model blocks in `~/.grok/config.toml` | the 5 grok-harness proxy lanes | copy [the shipped template](config/grok-config.example.toml) |
+| Grok CLI, authenticated | the 5 grok-harness lanes, incl. the default | [x.ai/cli](https://x.ai/cli) |
+| Codex CLI, authenticated | the 3 codex-harness lanes | [openai/codex](https://github.com/openai/codex) |
+| CLIProxyAPI running on port 8317 | the 6 proxy-routed lanes | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) |
+| Model blocks in `~/.grok/config.toml` | the 4 grok-harness proxy lanes | copy [the shipped template](config/grok-config.example.toml) |
 | z.ai / Moonshot API keys | `glm-cc`, `kimi-cc` | create in each vendor's console, add to `~/.claude/.env` |
 | coreutils, for `gtimeout` | optional — caps lane runtime | `brew install coreutils` |
 
@@ -82,7 +82,7 @@ Three lanes authenticate natively and need no keys: `claude-native` works with n
 ```bash
 ZAI_API_KEY=…        ZAI_BASE_URL=…        # glm-cc (z.ai)
 MOONSHOT_API_KEY=…   MOONSHOT_BASE_URL=…   # kimi-cc (Moonshot)
-CLIPROXY_BASE_URL=…  CLIPROXY_API_KEY=…    # every proxy-routed lane
+CLIPROXY_API_KEY=…                            # the 6 proxy-routed lanes
 ```
 
 For the proxy-routed lanes: install and start [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) with upstream accounts for the models you want it to serve (its README covers that), confirm it answers — `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8317/` should print `200` — then copy `config/grok-config.example.toml` to `~/.grok/config.toml` as-is. Skip all of this if you only use the direct lanes. Details: [docs/lanes.md](docs/lanes.md).
@@ -93,7 +93,7 @@ Then check the fleet:
 ~/.claude/plugins/pitwall/scripts/preflight-all.sh
 ```
 
-Every lane you plan to use should show `ok`/`ok`; with all sixteen configured, the footer reads `16/16 lanes ready`. A lane reporting `MISSING(VAR)` means that credential is absent from your env file — correct reporting, not a bug; add the variable and re-run. Preflight checks binaries and env vars only; it does not probe the proxy. Full runbook: [docs/verification.md](docs/verification.md).
+Every lane you plan to use should show `ok`/`ok`; with all eleven configured, the footer reads `11/11 lanes ready`. A lane reporting `MISSING(VAR)` means that credential is absent from your env file — correct reporting, not a bug; add the variable and re-run. Preflight checks binaries and env vars only; it does not probe the proxy. Full runbook: [docs/verification.md](docs/verification.md).
 
 ## Usage
 
@@ -145,17 +145,12 @@ Add a lane by editing `~/.claude/pitwall/lanes.json` — no plugin change:
 | `claude-native` | (CLI default) | Claude Code CLI | native |
 | `glm-cc` | glm-5.2 | Claude Code CLI | z.ai via env shim |
 | `kimi-cc` | kimi-k3 | Claude Code CLI | Moonshot via env shim |
-| `gpt56-cc` | gpt-5.6-sol | Claude Code CLI | CLIProxyAPI via env shim |
 | `glm-grok` | glm-5.2 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
 | `gpt56-grok` | gpt-5.6-sol | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
-| `kimi-grok` | kimi-k3 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
 | `opus48-grok` | claude-opus-4-8 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
 | `sonnet5-grok` | claude-sonnet-5 | Grok CLI | CLIProxyAPI via `~/.grok/config.toml` |
 | `glm-codex` | glm-5.2 | Codex CLI | CLIProxyAPI via `model_providers` flags |
 | `grok45-codex` | grok-4.5 | Codex CLI | CLIProxyAPI via `model_providers` flags |
-| `kimi-codex` | kimi-k3 | Codex CLI | CLIProxyAPI via `model_providers` flags |
-| `opus48-codex` | claude-opus-4-8 | Codex CLI | CLIProxyAPI via `model_providers` flags |
-| `sonnet5-codex` | claude-sonnet-5 | Codex CLI | CLIProxyAPI via `model_providers` flags |
 
 ### Cost notes
 
@@ -163,8 +158,8 @@ To pick a model for a lane, start from [Artificial Analysis](https://artificiala
 
 Measured once, on one machine, on the same trivial write task — directional, not a benchmark:
 
-- The same Anthropic model cost ~2x through the codex harness versus the grok harness (143k vs 67k tokens). Harness choice moved cost more than model choice.
-- Codex defaults unrecognized models to `xhigh` reasoning effort; on the same task `grok-4.5` burned 96k tokens against `glm-5.2`'s 5.6k until pinned. The proxy-routed codex lanes pin `model_reasoning_effort = medium`; `codex-gpt56` pins `high`.
+- `claude-opus-4-8` used 143k tokens through the codex harness versus 67k through the grok harness on a single trivial write task. That result motivated pruning the Anthropic-on-codex pairings; harness choice moved cost more than model choice.
+- Codex defaults unrecognized models to `xhigh` reasoning effort; on the same task `grok-4.5` burned 96k tokens against `glm-5.2`'s 5.6k until pinned. Both proxy-routed codex lanes, `glm-codex` and `grok45-codex`, pin `model_reasoning_effort = medium`; `codex-gpt56` pins `high`.
 - `kimi-k3` omits trailing newlines on files it writes. Verification commands that exact-match `\n`-terminated strings fail against it; compare trimmed content.
 
 ## Alternatives

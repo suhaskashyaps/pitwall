@@ -91,7 +91,7 @@ Rules:
 - `env_key` is enforced: the named var must exist in the process env (keep it in the lane's `env` map, e.g. `"CLIPROXY_API_KEY": "CLIPROXY_API_KEY"`).
 - Always pin `model_reasoning_effort`. Codex defaults unknown models to `xhigh`.
 
-`codex-gpt56` uses native auth and only pins reasoning effort.
+The shipped proxy-routed codex lanes, `glm-codex` and `grok45-codex`, pin `model_reasoning_effort=medium`. `codex-gpt56` uses native auth and pins `high`.
 
 ### grok
 
@@ -114,7 +114,7 @@ HTTP chat-completions via `curl` against Groq Inc.'s API. Needs `GROQ_API_KEY`. 
 
 Vendor endpoints often do not speak a harness's wire protocol (`claude` → Anthropic Messages, `codex` → OpenAI Responses, `grok` → xAI). The proxy bridges that mismatch so you can pair any model with any harness.
 
-**Shipped lanes that require the proxy (11 of 16):** every lane except `grok`, `codex-gpt56`, `claude-native`, `glm-cc`, and `kimi-cc`. Those eleven fail at connect time if the proxy is down.
+**Shipped lanes that require the proxy (6 of 11):** `glm-grok`, `glm-codex`, `grok45-codex`, `gpt56-grok`, `opus48-grok`, and `sonnet5-grok`. Those six fail at connect time if the proxy is down.
 
 ## Required env vars
 
@@ -124,11 +124,10 @@ Put these in `~/.claude/.env` (or the path named by `PITWALL_ENV_FILE`):
 |---|---|
 | `glm-cc` | `ZAI_API_KEY`, `ZAI_BASE_URL` |
 | `kimi-cc` | `MOONSHOT_API_KEY`, `MOONSHOT_BASE_URL` |
-| `gpt56-cc` | `CLIPROXY_BASE_URL`, `CLIPROXY_API_KEY` |
-| All other proxy lanes (`*-grok` / `*-codex` except natives) | `CLIPROXY_API_KEY` |
+| `glm-grok`, `glm-codex`, `grok45-codex`, `gpt56-grok`, `opus48-grok`, `sonnet5-grok` | `CLIPROXY_API_KEY` |
 | `grok`, `codex-gpt56`, `claude-native` | none (native CLI auth) |
 
-`CLIPROXY_BASE_URL` for `gpt56-cc` is the Anthropic-compat base the claude harness hits (typically `http://127.0.0.1:8317`). Codex proxy lanes hardcode the base URL in `extra_flags`; grok proxy lanes read it from `~/.grok/config.toml`.
+`CLIPROXY_BASE_URL` is no longer consumed by any shipped lane. Codex proxy lanes hardcode the base URL in `extra_flags`; grok proxy lanes read it from `~/.grok/config.toml`.
 
 ## Preflight
 
@@ -136,4 +135,4 @@ Put these in `~/.claude/.env` (or the path named by `PITWALL_ENV_FILE`):
 ~/.claude/plugins/pitwall/scripts/preflight-all.sh
 ```
 
-Checks: harness binary on `PATH`, and every source env var named in a lane's `env` map is set and non-empty. It does **not** probe `127.0.0.1:8317` or validate `~/.grok/config.toml`. A green preflight can still fail at connect time when the proxy is down or a grok model block is missing.
+Checks: harness binary on `PATH`, and every source env var named in a lane's `env` map is set and non-empty. The required env list is derived dynamically from `lanes.json`; the script does not hardcode lane credentials. It does **not** probe `127.0.0.1:8317` or validate `~/.grok/config.toml`. A green preflight can still fail at connect time when the proxy is down or a grok model block is missing.

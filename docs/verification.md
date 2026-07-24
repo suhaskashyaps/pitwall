@@ -59,13 +59,13 @@ Preflight does not check two things: the CLIProxyAPI endpoint itself, and `~/.gr
 
 ## 3. Proxy check for proxy-dependent lanes
 
-Eleven of the sixteen shipped lanes need a local CLIProxyAPI instance:
+Six of the eleven shipped lanes need a local CLIProxyAPI instance:
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8317/
 ```
 
-Expect `200`. Any other code means every lane routed through that proxy fails at connect time, not at spec time.
+Expect `200`. Any other code means all six lanes routed through that proxy fail at connect time, not at spec time.
 
 ---
 
