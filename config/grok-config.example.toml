@@ -1,6 +1,6 @@
 # Sanitized example/template for Grok CLI model wiring used by pitwall's
-# grok-harness proxy lanes (glm-grok, gpt56-grok, kimi-grok, opus48-grok,
-# sonnet5-grok). This is not a live config.
+# grok-harness proxy lanes (glm-grok, gpt56-grok, opus48-grok, sonnet5-grok).
+# This is not a live config.
 #
 # Install: copy to ~/.grok/config.toml
 #   cp config/grok-config.example.toml ~/.grok/config.toml
@@ -20,12 +20,6 @@ env_key = "CLIPROXY_API_KEY"
 model = "gpt-5.6-sol"
 base_url = "http://127.0.0.1:8317/v1"
 name = "GPT 5.6 Sol (proxy)"
-env_key = "CLIPROXY_API_KEY"
-
-[model.kimi-k3]
-model = "kimi-k3"
-base_url = "http://127.0.0.1:8317/v1"
-name = "Kimi K3 (proxy)"
 env_key = "CLIPROXY_API_KEY"
 
 [model.claude-opus-4-8]
