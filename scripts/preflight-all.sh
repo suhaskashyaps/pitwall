@@ -43,8 +43,60 @@ harness_binary() {
   esac
 }
 
-printf '%-14s %-8s %-22s %-8s %s\n' "LANE" "HARNESS" "MODEL" "BINARY" "ENV"
-printf '%-14s %-8s %-22s %-8s %s\n' "----" "-------" "-----" "------" "---"
+PRICES="${PITWALL_PRICES:-$PLUGIN_ROOT/config/prices.json}"
+
+# A lane whose model has no price entry ingests as unattributable cost: the
+# harness may report nothing and there is no table to impute from. Catch it
+# here rather than after a paid run.
+price_status() {
+  local model="$1"
+  [[ -f "$PRICES" ]] || { echo "NO-TABLE"; return; }
+  [[ -n "$model" ]] || { echo "n/a"; return; }
+  if jq -e --arg m "$model" '.models[$m]' "$PRICES" >/dev/null 2>&1; then
+    echo "ok"
+  else
+    echo "NO-PRICE"
+  fi
+}
+
+# Cheap, free reachability probe. Only lanes routed through a local proxy can be
+# probed without spending money; native CLIs report auth/config presence only.
+# S7 lost a whole leg to an upstream outage that a 5-second probe would have caught.
+# Probed ONCE, before the lane loop. Calling a probe from inside a command
+# substitution would run it in a subshell, so any cache set there is lost and
+# every proxy lane re-probes: 6 lanes against a dead proxy meant 6 x 5s of
+# timeout. The answer is identical for every proxy lane, so compute it up front.
+probe_proxy() {
+  local base="${CLIPROXY_BASE_URL:-http://127.0.0.1:8317}" code
+  command -v curl >/dev/null || { echo "NO-CURL"; return; }
+  # Take curl's EXIT STATUS for the failure case, never its stdout: on a refused
+  # connection curl prints 000 AND exits nonzero, so `|| echo 000` would append a
+  # second 000 and yield "000000", which no case arm matches.
+  code="$(curl -s -o /dev/null -m 5 -w '%{http_code}' \
+    -H "Authorization: Bearer ${CLIPROXY_API_KEY:-}" "$base/v1/models" 2>/dev/null)" \
+    || code="000"
+  case "$code" in
+    200) echo "ok" ;;
+    ""|000*) echo "DOWN" ;;
+    401|403) echo "AUTH($code)" ;;
+    *) echo "HTTP($code)" ;;
+  esac
+}
+
+PROXY_REACH=""
+if grep -q 'CLIPROXY_API_KEY' "$CONFIG" 2>/dev/null; then
+  PROXY_REACH="$(probe_proxy)"
+fi
+
+reach_status() {
+  [[ "$1" == *CLIPROXY_API_KEY* ]] || { echo "skip"; return; }
+  echo "${PROXY_REACH:-DOWN}"
+}
+
+printf '%-14s %-8s %-22s %-8s %-10s %-9s %s\n' \
+  "LANE" "HARNESS" "MODEL" "BINARY" "PRICE" "REACH" "ENV"
+printf '%-14s %-8s %-22s %-8s %-10s %-9s %s\n' \
+  "----" "-------" "-----" "------" "-----" "-----" "---"
 
 ready_count=0
 total_count=0
@@ -72,9 +124,20 @@ while IFS=$'\t' read -r lane_id harness model envvars; do
     fi
   fi
 
-  [[ "$bin_status" == "ok" && "$env_status" == "ok" ]] && ready_count=$((ready_count + 1))
+  price_st="$(price_status "$model")"
+  reach_st="$(reach_status "$envvars")"
 
-  printf '%-14s %-8s %-22s %-8s %s\n' "$lane_id" "$harness" "${model:-(default)}" "$bin_status" "$env_status"
+  # Ready means dispatchable AND attributable. Anything other than a clean
+  # probe (AUTH/HTTP/DOWN) or a usable price entry blocks the lane: a lane whose
+  # proxy rejects its key, or whose model has no price, cannot produce a receipt.
+  [[ "$bin_status" == "ok" && "$env_status" == "ok" \
+     && ( "$reach_st" == "ok" || "$reach_st" == "skip" ) \
+     && ( "$price_st" == "ok" || "$price_st" == "n/a" ) ]] \
+    && ready_count=$((ready_count + 1))
+
+  printf '%-14s %-8s %-22s %-8s %-10s %-9s %s\n' \
+    "$lane_id" "$harness" "${model:-(default)}" "$bin_status" \
+    "$price_st" "$reach_st" "$env_status"
 done < <(jq -r '.lanes | to_entries[] | [.key, .value.harness, (.value.model // ""), (.value.env // null | if . == null then "" else to_entries | map(.value) | @json end)] | @tsv' "$CONFIG")
 
 echo

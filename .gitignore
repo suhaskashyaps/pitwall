@@ -1,2 +1,15 @@
 .DS_Store
 *.log
+__pycache__/
+
+# Secrets. The Langfuse stack under observability/ carries a .env with live
+# keys. Ignore the secret files themselves rather than the whole directory:
+# observability/langfuse/{docker-compose.yml,.env.example} are tracked, and a
+# blanket rule would silently hide any file added beside them.
+*.env
+!*.env.example
+
+# Experiment output: run captures contain full prompt and response text, and
+# receipts are regenerable. Neither belongs in the repo.
+runs/
+receipts/
