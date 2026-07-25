@@ -56,7 +56,9 @@ The first two rows are the minimum setup: Claude Code itself doubles as the CLI 
 | CLIProxyAPI running on port 8317 | the 6 proxy-routed lanes | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) |
 | Model blocks in `~/.grok/config.toml` | the 4 grok-harness proxy lanes | copy [the shipped template](config/grok-config.example.toml) |
 | z.ai / Moonshot API keys | `glm-cc`, `kimi-cc` | create in each vendor's console, add to `~/.claude/.env` |
-| coreutils, for `gtimeout` | optional: caps lane runtime | `brew install coreutils` |
+| uv | the cost tooling: `ab-run`, `pitwall_trace.py`, `pitwall_compare.py`, tests | [astral.sh/uv](https://docs.astral.sh/uv/) |
+| Docker | optional: the local Langfuse stack in `observability/langfuse/` | [docker.com](https://www.docker.com) |
+| coreutils, for `gtimeout` | optional: a native timeout binary. Without it lanes still get capped by a built-in watchdog | `brew install coreutils` |
 
 Two steps are human-only: creating vendor API keys and each CLI's sign-in flow. A coding agent running this setup should hand those back to you.
 
@@ -66,6 +68,12 @@ Two steps are human-only: creating vendor API keys and each CLI's sign-in flow. 
 - **`lane-runner` agent**: one generic dispatcher. Resolves a lane from `lanes.json`, preflights the harness, invokes it headlessly with per-lane env, verifies independently, reports in the fixed `LANE REPORT` format: every report names the model-harness it ran.
 - **`fable-advisor` agent**: a read-only second-opinion advisor for commitment boundaries. It advises; it never implements.
 - **`lanes.json`**: the fleet, in user config. Add, remove, or repoint lanes by editing one file.
+- **`scripts/ab-run`**: runs one task twice under a single experiment id, a pinned lane against a plain session, records per-leg wall clock and harness exit, and re-runs your acceptance command itself with `--verify`.
+- **`scripts/pitwall_trace.py`**: turns each harness's usage capture into priced, comparable cost. Imputes from `config/prices.json` when a harness reports none (proxy-routed lanes never do), marks those rows `imputed`, refuses to ingest a leg twice, and names any dispatch whose capture never landed.
+- **`scripts/pitwall_compare.py`**: joins several single-lane experiments plus a baseline into one table of cost, wall clock and gate result. This is the bake-off.
+- **`scripts/preflight-all.sh`**: a lane health matrix. Blocks lanes whose binary, credentials, proxy, or price entry are missing, before you spend anything.
+
+Langfuse is optional. `pitwall_trace.py ingest-lane --dry-run` prints the priced trace as JSON with no server running; only posting and the cross-leg report need an instance. A compose file for a local stack ships in `observability/langfuse/`. It is several containers and will slow a laptop, so tear it down when idle.
 
 ## Install
 
@@ -149,6 +157,31 @@ Add a lane by editing `~/.claude/pitwall/lanes.json` (no plugin change):
 ```
 
 `env` values are env-var *names*, never secrets: `"ANTHROPIC_AUTH_TOKEN": "ZAI_API_KEY"` means "read `$ZAI_API_KEY` from the env file and inject it as `ANTHROPIC_AUTH_TOKEN`". The JSON is safe to commit. Full schema and per-harness wiring rules: [docs/lanes.md](docs/lanes.md).
+
+### Running a bake-off
+
+To find out which lane suits your work, run the same task through each one and compare. Point `--target` at a copy of a real task with a command that decides pass or fail:
+
+```bash
+# one leg per lane, plus a baseline, each under its own experiment id
+scripts/ab-run --task "$(cat task.md)" --target ./seed \
+  --experiment bake-glm-codex --lane glm-codex --skip-solo \
+  --pitwall-model claude-sonnet-5 \
+  --verify "pytest -q"
+
+scripts/ab-run --task "$(cat task.md)" --target ./seed \
+  --experiment bake-baseline --skip-pitwall \
+  --verify "pytest -q"
+
+scripts/pitwall_compare.py \
+  "baseline=bake-baseline=solo" \
+  "glm-codex=bake-glm-codex=lane" \
+  --verify "pytest -q"
+```
+
+One experiment id per leg: ingest is additive and refuses a second write to the same leg. Always pass `--verify`, because a lane that fails is the cheapest lane on the table and its own report will still read as success. Hold `--pitwall-model` constant across legs, since architect cost dominates and a varying architect hides the lane difference. Measuring is not free: N lanes is N paid runs plus an architect each, and legs run serially by design.
+
+A worked example across every shipped lane, with method and limitations: [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md).
 
 ## Shipped lanes
 
