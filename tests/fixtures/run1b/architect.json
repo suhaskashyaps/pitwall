@@ -1,0 +1,34 @@
+{
+  "is_error": false,
+  "duration_api_ms": 119690,
+  "num_turns": 9,
+  "stop_reason": "end_turn",
+  "session_id": "804ff1ec-b83e-44d4-9758-e44fb7c63ea9",
+  "total_cost_usd": 1.2383544999999996,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 32017,
+    "cache_read_input_tokens": 228364,
+    "output_tokens": 2318
+  },
+  "modelUsage": {
+    "claude-fable-5": {
+      "inputTokens": 12,
+      "outputTokens": 2318,
+      "cacheReadInputTokens": 228364,
+      "cacheCreationInputTokens": 32017,
+      "costUSD": 0.9061164999999999,
+      "canonicalModel": "claude-fable-5",
+      "provider": "firstParty"
+    },
+    "claude-sonnet-5": {
+      "inputTokens": 44,
+      "outputTokens": 6525,
+      "cacheReadInputTokens": 496770,
+      "cacheCreationInputTokens": 22720,
+      "costUSD": 0.33223800000000003,
+      "canonicalModel": "claude-sonnet-5",
+      "provider": "firstParty"
+    }
+  }
+}

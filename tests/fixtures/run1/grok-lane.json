@@ -1,0 +1,21 @@
+{
+  "usage": {
+    "input_tokens": 10000,
+    "cache_read_input_tokens": 2500,
+    "output_tokens": 1200,
+    "reasoning_tokens": 400,
+    "total_tokens": 11200
+  },
+  "modelUsage": {
+    "grok-code-fast": {
+      "inputTokens": 10000,
+      "outputTokens": 1200,
+      "cacheReadInputTokens": 2500,
+      "modelCalls": 2,
+      "costUSD": 0.00375
+    }
+  },
+  "total_cost_usd": 0.00375,
+  "stopReason": "end_turn",
+  "num_turns": 2
+}

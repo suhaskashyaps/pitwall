@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+# A/B experiment wrapper: same task solo vs pitwall, then ingest + report.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TRACE="$SCRIPT_DIR/pitwall_trace.py"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  ab-run --task "<task text>" --target <dir> [--experiment ID]
+         [--solo-model M] [--pitwall-model M] [--lane LANE] [--keep]
+         [--verify "<command>"] [--skip-solo | --skip-pitwall]
+
+  ab-run --ingest-only --experiment ID --run-dir <pitwall-capture-dir>
+         --solo-json <file>
+
+  ab-run --help | -h
+
+Runs the task twice under one experiment ID (solo Claude Code vs pitwall
+architect + lane dispatches), ingests both legs via pitwall_trace.py, and
+prints the side-by-side cost report.
+
+--lane pins the pitwall leg to ONE lane from lanes.json: every implementation
+dispatch goes through that single model-harness, no other lane, no in-session
+implementation. Use one experiment ID per lane to compare model-harness
+combinations on the same task (ingest is not idempotent; never re-ingest a
+leg under the same ID).
+
+--verify runs an acceptance command inside each leg's work tree after the leg
+finishes, writing output plus exit_code to <leg>/gates.txt. A leg's own report
+is not evidence: architects have reported success over an empty tree. Supply
+this whenever the task has a deterministic gate, e.g.
+  --verify "python3 gate.py && python3 -m unittest discover"
+
+Wall clock per leg is recorded in leg-start.txt / leg-end.txt next to each
+leg's capture; the harness JSON duration_ms has proven unreliable, so report
+timing from the markers. Each leg also records its harness exit status in
+<leg>/harness-exit.txt.
+
+Run legs SERIALLY. Concurrent legs contend on a shared local proxy and corrupt
+wall-clock measurement; never parallelise them to save time.
+
+Layout: $PITWALL_RUNS_ROOT/<exp>/{solo,pitwall,work-solo,work-pitwall}
+PITWALL_RUNS_ROOT defaults to $HOME/.local/share/pitwall/runs. Do NOT point it
+under $HOME/.claude: Claude Code treats that prefix as protected and denies
+harness writes there as "sensitive", costing a leg its entire work product.
+Both work trees always survive and are printed; nothing is auto-deleted
+(--keep documents the same retention policy).
+
+COST OF MEASURING. Benchmarking is not free, in money or in machine load:
+  - Every leg is a full paid run of the task. An N-lane comparison costs N
+    times the task, plus one architect per pitwall leg. Budget before you start.
+  - Legs run serially by design, so wall-clock is the SUM of all legs. An
+    11-lane sweep took roughly 2 hours here.
+  - The optional Langfuse stack is a local Docker deployment (web, worker,
+    Postgres, ClickHouse, Redis, MinIO). Expect multiple GB of RAM held for as
+    long as it runs, growing disk under load, and a noticeably slower machine
+    on laptops. It is only needed to STORE traces; ingest can be inspected with
+    `pitwall_trace.py ingest-lane --dry-run`, which needs no server at all.
+  - Tear the stack down when you are done rather than leaving it resident:
+    docker compose -f observability/langfuse/docker-compose.yml down
+  - Captures accumulate under PITWALL_RUNS_ROOT and contain full prompt and
+    response text. Prune them; never commit them.
+
+Exit codes: 0 ok, 2 usage error, 3 leg already ingested (safe no-op), 4 a leg's
+harness failed, 5 a leg failed verification.
+EOF
+}
+
+TASK="" TARGET="" EXP="" SOLO_MODEL="" PITWALL_MODEL="" LANE="" VERIFY=""
+KEEP=0 SKIP_SOLO=0 SKIP_PITWALL=0 INGEST_ONLY=0
+RUN_DIR="" SOLO_JSON=""
+
+# Runs live outside ~/.claude by default; see the work-tree note below.
+RUNS_ROOT="${PITWALL_RUNS_ROOT:-$HOME/.local/share/pitwall/runs}"
+
+# Exit codes, so a caller can tell "the run failed" from "the report is partial".
+EX_USAGE=2        # bad arguments
+EX_LEG_FAILED=4   # a leg's harness exited nonzero
+EX_VERIFY_FAILED=5 # a leg ran but its verification command failed
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --task) TASK="${2:?}"; shift 2 ;;
+    --target) TARGET="${2:?}"; shift 2 ;;
+    --experiment) EXP="${2:?}"; shift 2 ;;
+    --solo-model) SOLO_MODEL="${2:?}"; shift 2 ;;
+    --pitwall-model) PITWALL_MODEL="${2:?}"; shift 2 ;;
+    --lane) LANE="${2:?}"; shift 2 ;;
+    --verify) VERIFY="${2:?}"; shift 2 ;;
+    --keep) KEEP=1; shift ;;
+    --skip-solo) SKIP_SOLO=1; shift ;;
+    --skip-pitwall) SKIP_PITWALL=1; shift ;;
+    --ingest-only) INGEST_ONLY=1; shift ;;
+    --run-dir) RUN_DIR="${2:?}"; shift 2 ;;
+    --solo-json) SOLO_JSON="${2:?}"; shift 2 ;;
+    *) echo "ab-run: unknown argument: $1" >&2; usage >&2; exit "$EX_USAGE" ;;
+  esac
+done
+
+# A leg's own report is not evidence. S7: one architect reported success while
+# nothing had been implemented, and another reported a completed leg over an
+# empty tree. Run the acceptance command here and record the verdict per leg.
+VERIFY_FAILED=0
+verify_leg() {
+  local leg="$1" work="$2"
+  [[ -n "$VERIFY" ]] || return 0
+  local out="$RUN/$leg/gates.txt" rc=0
+  echo "ab-run: verifying $leg: $VERIFY"
+  # Run under an explicit `set -e` shell. A bare subshell on the LHS of `||` has
+  # errexit suppressed, so a gate written with `;` instead of `&&` would report
+  # only its LAST command's status and pass over an earlier failure. `-u` is
+  # deliberately NOT set: gates legitimately reference optional variables.
+  ( cd "$work" && bash -e -o pipefail -c "$VERIFY" ) >"$out" 2>&1 || rc=$?
+  echo "exit_code=$rc" >>"$out"
+  if [[ $rc -eq 0 ]]; then
+    echo "ab-run: $leg verification PASSED"
+  else
+    echo "ab-run: $leg verification FAILED (exit $rc); see $out" >&2
+    VERIFY_FAILED=1
+  fi
+}
+
+# Exit 3 from the tracer means "this leg is already ingested"; that is a safe
+# no-op for a re-run and must not abort recovery of the OTHER leg. Any other
+# nonzero status is a real ingest failure and still aborts.
+ingest_leg() {
+  local rc=0
+  uv run "$TRACE" "$@" || rc=$?
+  if [[ $rc -eq 3 ]]; then
+    echo "ab-run: leg already ingested; leaving it as-is" >&2
+    return 0
+  fi
+  return $rc
+}
+
+ingest_and_report() {
+  local exp="$1" solo_json="$2" pitwall_dir="$3"
+  # A leg whose harness died writes an empty/garbage capture. Ingesting it would
+  # fail with a parse error and mask the real cause (the leg crashed), so skip it
+  # and let the leg-failure exit code speak instead.
+  if [[ -s "$solo_json" ]]; then
+    ingest_leg ingest-solo --json-file "$solo_json" --experiment "$exp"
+  elif [[ -f "$solo_json" ]]; then
+    echo "ab-run: solo capture is empty; skipping its ingest" >&2
+  fi
+  if [[ -d "$pitwall_dir" ]] && compgen -G "${pitwall_dir}/*" >/dev/null; then
+    ingest_leg ingest-lane --run-dir "$pitwall_dir" --experiment "$exp"
+  fi
+  # Only demand a leg the caller actually asked for.
+  local expect="both"
+  if [[ "$SKIP_SOLO" -eq 1 ]]; then expect="pitwall"; fi
+  if [[ "$SKIP_PITWALL" -eq 1 ]]; then expect="solo"; fi
+  uv run "$TRACE" report --experiment "$exp" --expect-legs "$expect"
+}
+
+if [[ "$INGEST_ONLY" -eq 1 ]]; then
+  if [[ -z "$EXP" || -z "$RUN_DIR" || -z "$SOLO_JSON" ]]; then
+    echo "ab-run: --ingest-only requires --experiment, --run-dir, --solo-json" >&2
+    exit "$EX_USAGE"
+  fi
+  ingest_leg ingest-solo --json-file "$SOLO_JSON" --experiment "$EXP"
+  ingest_leg ingest-lane --run-dir "$RUN_DIR" --experiment "$EXP"
+  uv run "$TRACE" report --experiment "$EXP"
+  exit 0
+fi
+
+if [[ -z "$TASK" || -z "$TARGET" ]]; then
+  echo "ab-run: --task and --target are required (or use --ingest-only)" >&2
+  usage >&2
+  exit "$EX_USAGE"
+fi
+if [[ ! -d "$TARGET" ]]; then
+  echo "ab-run: --target is not a directory: $TARGET" >&2
+  exit "$EX_USAGE"
+fi
+
+[[ -n "$EXP" ]] || EXP="exp-$(date +%Y%m%d-%H%M%S)"
+RUN="$RUNS_ROOT/$EXP"
+mkdir -p "$RUN/solo" "$RUN/pitwall"
+
+# Work trees must NOT live under ~/.claude: Claude Code treats that prefix as a
+# protected path and denies harness writes to it as "sensitive", which burns a
+# whole leg's spend for zero work product (S7: kimi-cc wrote nothing, $0.61).
+# Warn BEFORE doing the work, and resolve the path so a symlink or a relative
+# root cannot slip past the check.
+RUN_CANON="$(cd "$RUN" 2>/dev/null && pwd -P || echo "$RUN")"
+case "$RUN_CANON" in
+  "$HOME/.claude"/*)
+    echo "ab-run: WARNING: work trees are under ~/.claude; harness writes may be" >&2
+    echo "ab-run: denied as 'sensitive'. Set PITWALL_RUNS_ROOT elsewhere." >&2
+    ;;
+esac
+
+# Re-running an experiment id must not copy the target INTO a surviving tree
+# (cp -R onto an existing dir nests it one level down) or reuse a dirty tree.
+rm -rf "$RUN/work-solo" "$RUN/work-pitwall"
+cp -R "$TARGET" "$RUN/work-solo"
+cp -R "$TARGET" "$RUN/work-pitwall"
+echo "ab-run: experiment=$EXP"
+echo "ab-run: work-solo=$RUN/work-solo"
+echo "ab-run: work-pitwall=$RUN/work-pitwall"
+echo "ab-run: run-dir=$RUN (always retained; --keep=$KEEP)"
+
+if [[ "$SKIP_SOLO" -eq 0 ]]; then
+  args=(-p "$TASK" --permission-mode acceptEdits --output-format json)
+  [[ -z "$SOLO_MODEL" ]] || args=(--model "$SOLO_MODEL" "${args[@]}")
+  date -u +%FT%TZ >"$RUN/solo/leg-start.txt"
+  solo_rc=0
+  (cd "$RUN/work-solo" && claude "${args[@]}") >"$RUN/solo/solo.json" || solo_rc=$?
+  date -u +%FT%TZ >"$RUN/solo/leg-end.txt"
+  echo "$solo_rc" >"$RUN/solo/harness-exit.txt"
+  if [[ $solo_rc -ne 0 ]]; then
+    echo "ab-run: solo harness exited $solo_rc; continuing to ingest what landed" >&2
+  fi
+  verify_leg solo "$RUN/work-solo"
+fi
+
+if [[ "$SKIP_PITWALL" -eq 0 ]]; then
+  if [[ -n "$LANE" ]]; then
+    PITWALL_TASK="Act as the pitwall architect. Route EVERY implementation dispatch through the pitwall:lane-runner agent with LANE: $LANE; no other lane, and no in-session implementation. If that lane reports unavailable, stop and report; do not substitute. Task: $TASK"
+  else
+    PITWALL_TASK="Act as the pitwall architect and delegate all implementation through the pitwall orchestration skill's lane dispatches. Task: $TASK"
+  fi
+  args=(-p "$PITWALL_TASK" --permission-mode acceptEdits --output-format json)
+  [[ -z "$PITWALL_MODEL" ]] || args=(--model "$PITWALL_MODEL" "${args[@]}")
+  jq -n --arg model "$PITWALL_MODEL" \
+    '{lane:"architect",harness:"claude",model:$model}' \
+    >"$RUN/pitwall/architect.meta.json"
+  date -u +%FT%TZ >"$RUN/pitwall/leg-start.txt"
+  pitwall_rc=0
+  (
+    cd "$RUN/work-pitwall"
+    export PITWALL_EXPERIMENT_ID="$EXP"
+    export PITWALL_RUN_DIR="$RUN/pitwall"
+    claude "${args[@]}"
+  ) >"$RUN/pitwall/architect.json" || pitwall_rc=$?
+  date -u +%FT%TZ >"$RUN/pitwall/leg-end.txt"
+  echo "$pitwall_rc" >"$RUN/pitwall/harness-exit.txt"
+  if [[ $pitwall_rc -ne 0 ]]; then
+    echo "ab-run: pitwall harness exited $pitwall_rc; continuing to ingest what landed" >&2
+  fi
+  verify_leg pitwall "$RUN/work-pitwall"
+fi
+
+if [[ -n "$VERIFY" && "$SKIP_SOLO" -eq 1 && "$SKIP_PITWALL" -eq 1 ]]; then
+  echo "ab-run: WARNING: --verify was given but both legs were skipped; no gate ran" >&2
+fi
+
+# A leg crash must surface as EX_LEG_FAILED, not as the ingest's exit 2, which
+# is the documented "usage error". Capture the status instead of letting set -e
+# abort here, then let the most informative code win below.
+ingest_rc=0
+ingest_and_report "$EXP" "$RUN/solo/solo.json" "$RUN/pitwall" || ingest_rc=$?
+
+if [[ "${solo_rc:-0}" -ne 0 || "${pitwall_rc:-0}" -ne 0 ]]; then
+  echo "ab-run: a leg's harness exited nonzero (solo=${solo_rc:-0} pitwall=${pitwall_rc:-0})" >&2
+  exit "$EX_LEG_FAILED"
+fi
+if [[ "$ingest_rc" -ne 0 ]]; then
+  echo "ab-run: ingest/report failed (exit $ingest_rc)" >&2
+  exit "$ingest_rc"
+fi
+
+if [[ "$VERIFY_FAILED" -eq 1 ]]; then
+  echo "ab-run: at least one leg failed verification" >&2
+  exit "$EX_VERIFY_FAILED"
+fi

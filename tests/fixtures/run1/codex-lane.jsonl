@@ -1,0 +1,3 @@
+{"type":"thread_started","payload":{"thread_id":"fixture-run-1"}}
+{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":12000,"cached_input_tokens":3000,"cache_write_input_tokens":500,"output_tokens":1800,"reasoning_output_tokens":400,"total_tokens":13800}}}}
+{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":20000,"cached_input_tokens":5000,"cache_write_input_tokens":1000,"output_tokens":3000,"reasoning_output_tokens":800,"total_tokens":23000}}}}

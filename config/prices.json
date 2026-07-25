@@ -1,0 +1,74 @@
+{
+  "updated": "2026-07-25",
+  "source": "Audited against official provider pricing pages (docs.claude.com, platform.openai.com, docs.z.ai, platform.moonshot.ai, docs.x.ai) on 2026-07-25.",
+  "models": {
+    "gpt-5.6-sol": {
+      "input_per_mtok": 5.0,
+      "output_per_mtok": 30.0,
+      "cache_read_per_mtok": 0.5,
+      "cache_write_per_mtok": 6.25,
+      "verified": true
+    },
+    "glm-5.2": {
+      "input_per_mtok": 1.4,
+      "output_per_mtok": 4.4,
+      "cache_read_per_mtok": 0.26,
+      "cache_write_per_mtok": 1.4,
+      "verified": true,
+      "_note": "z.ai publishes no cache-write surcharge; write billed at input rate"
+    },
+    "kimi-k3": {
+      "input_per_mtok": 3.0,
+      "output_per_mtok": 15.0,
+      "cache_read_per_mtok": 0.3,
+      "cache_write_per_mtok": 3.0,
+      "verified": true,
+      "_note": "Moonshot automatic caching; no published write surcharge, write billed at input rate"
+    },
+    "grok-4.5": {
+      "input_per_mtok": 2.0,
+      "output_per_mtok": 6.0,
+      "cache_read_per_mtok": 0.3,
+      "cache_write_per_mtok": 2.0,
+      "verified": true,
+      "_note": "xAI bills no cache-write surcharge; short-context tier (>=200K is $4/$12)"
+    },
+    "grok-code-fast": {
+      "input_per_mtok": 1.0,
+      "output_per_mtok": 2.0,
+      "cache_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 1.0,
+      "verified": true,
+      "_note": "id is now an alias of grok-build-0.1; retired grok-code-fast-1 pricing removed"
+    },
+    "claude-opus-4-8": {
+      "input_per_mtok": 5.0,
+      "output_per_mtok": 25.0,
+      "cache_read_per_mtok": 0.5,
+      "cache_write_per_mtok": 6.25,
+      "verified": true
+    },
+    "claude-sonnet-5": {
+      "input_per_mtok": 2.0,
+      "output_per_mtok": 10.0,
+      "cache_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 2.5,
+      "verified": true,
+      "_note": "introductory pricing through 2026-08-31; reverts to 3.0/15.0/0.3/3.75 on 2026-09-01"
+    },
+    "claude-fable-5": {
+      "input_per_mtok": 10.0,
+      "output_per_mtok": 50.0,
+      "cache_read_per_mtok": 1.0,
+      "cache_write_per_mtok": 12.5,
+      "verified": true
+    },
+    "claude-haiku-4-5": {
+      "input_per_mtok": 1.0,
+      "output_per_mtok": 5.0,
+      "cache_read_per_mtok": 0.1,
+      "cache_write_per_mtok": 1.25,
+      "verified": true
+    }
+  }
+}
