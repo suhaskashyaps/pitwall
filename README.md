@@ -33,7 +33,7 @@ Every vendor now ships its own agentic CLI, and the only way to know how a model
 
 ## Findings
 
-Three results from running the same seeded task across every configured lane, one lane at a time, against a solo control. Numbers, method, and caveats: [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md).
+Three results from running the same seeded task across every configured lane, one lane at a time, against a baseline session that used no orchestration. Numbers, method, and caveats: [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md).
 
 **The architect is the cost floor, not the lane.** Coordination overhead was the majority of most legs, and it does not shrink when you pick a cheaper lane. The cheapest implementation in the matrix still produced a leg that cost more than not orchestrating at all. This is the finding that should decide whether you orchestrate a given task: delegation has to clear a fixed toll before a cheaper model can pay you back.
 
@@ -175,28 +175,32 @@ Two traps that cost real money and are invisible from the config alone:
 - Codex silently defaults an unrecognized model to `xhigh` reasoning effort, which can burn an order of magnitude more tokens than the same task needs. Pin `model_reasoning_effort` on every codex lane; the shipped lanes already do.
 - `kimi-k3` omits trailing newlines on files it writes. Verification commands that exact-match `\n`-terminated strings fail against it; compare trimmed content.
 
-Every configured lane on one seeded build task (a 12-resource registry with referential integrity behind a deterministic gate), one dispatch each, architect held constant at `claude-sonnet-5`, against a solo control. All twelve legs passed both gates. Prices as of 2026-07-26.
+Every configured lane on one seeded build task (a 12-resource registry with referential integrity behind a deterministic gate), one dispatch each, architect held constant at `claude-sonnet-5`, against a baseline session that used no orchestration. All twelve legs passed both gates. Prices as of 2026-07-26.
 
-| lane | lane $ | architect $ | total $ | vs solo | wall clock |
-|---|---|---|---|---|---|
-| *solo control* | *n/a* | *n/a* | *1.13* | *1.00x* | *4m02s* |
-| `glm-codex` | 0.48 | 0.86 | 1.34 | 1.18x | 9m15s |
-| `codex-gpt56` | 0.65 | 0.78 | 1.43 | 1.26x | 5m10s |
-| `grok45-codex` | 0.47 | 1.04 | 1.52 | 1.34x | 6m50s |
-| `sonnet5-grok` | 0.67 | 0.98 | 1.65 | 1.46x | 8m25s |
-| `kimi-cc` | 0.83 | 0.88 | 1.71 | 1.52x | 9m01s |
-| `glm-grok` | **0.17** | 1.87 | 2.04 | 1.81x | 22m41s |
-| `grok` | 0.37 | 1.80 | 2.17 | 1.92x | 8m41s |
-| `glm-cc` | 1.47 | 0.89 | 2.36 | 2.09x | 8m34s |
-| `gpt56-grok` | 1.21 | 1.37 | 2.58 | 2.29x | 12m02s |
-| `opus48-grok` | 1.25 | 1.53 | 2.78 | 2.46x | 8m13s |
-| `claude-native` | 4.47 | 0.83 | 5.30 | 4.69x | 8m27s |
+The first row is the baseline: one ordinary Claude Code session doing the whole
+task itself, no lanes, no architect. Every other row delegated all implementation
+to the named model-harness while `claude-sonnet-5` played architect.
+
+| lane | model | harness | lane $ | architect $ | total $ | vs baseline | wall clock |
+|---|---|---|---|---|---|---|---|
+| *no orchestration* | *claude-sonnet-5* | *Claude Code* | *n/a* | *n/a* | *1.13* | *1.00x* | *4m02s* |
+| `glm-codex` | glm-5.2 | Codex CLI | 0.48 | 0.86 | 1.34 | 1.18x | 9m15s |
+| `codex-gpt56` | gpt-5.6-sol | Codex CLI | 0.65 | 0.78 | 1.43 | 1.26x | 5m10s |
+| `grok45-codex` | grok-4.5 | Codex CLI | 0.47 | 1.04 | 1.52 | 1.34x | 6m50s |
+| `sonnet5-grok` | claude-sonnet-5 | Grok CLI | 0.67 | 0.98 | 1.65 | 1.46x | 8m25s |
+| `kimi-cc` | kimi-k3 | Claude Code CLI | 0.83 | 0.88 | 1.71 | 1.52x | 9m01s |
+| `glm-grok` | glm-5.2 | Grok CLI | **0.17** | 1.87 | 2.04 | 1.81x | 22m41s |
+| `grok` | grok-4.5-build | Grok CLI | 0.37 | 1.80 | 2.17 | 1.92x | 8m41s |
+| `glm-cc` | glm-5.2 | Claude Code CLI | 1.47 | 0.89 | 2.36 | 2.09x | 8m34s |
+| `gpt56-grok` | gpt-5.6-sol | Grok CLI | 1.21 | 1.37 | 2.58 | 2.29x | 12m02s |
+| `opus48-grok` | claude-opus-4-8 | Grok CLI | 1.25 | 1.53 | 2.78 | 2.46x | 8m13s |
+| `claude-native` | claude-fable-5 | Claude Code CLI | 4.47 | 0.83 | 5.30 | 4.69x | 8m27s |
 
 How to read it:
 
-- **Every lane cost more than not orchestrating.** The cheapest total still ran 1.18x the solo control. Sort by `lane $` and the ordering changes completely, which is the point: the architect column is the toll, and it does not shrink when you pick a cheaper lane. `glm-grok` had the cheapest implementation in the matrix at $0.17 and still finished 1.81x.
-- **Harness choice moved cost 8.6x on one model.** `glm-5.2` ran $0.17 through the grok CLI, $0.48 through codex, $1.47 through the Claude CLI. Lane cost overall spanned 26x. No model-level benchmark captures this.
-- **The spread bought no quality.** All twelve passed the same gate, landing between 72 and 97 tests. The most expensive lane was not the best one.
+- **Every lane cost more than not orchestrating.** The cheapest total still ran 1.18x the baseline. Sort by `lane $` and the ordering changes completely, which is the point: the architect column is the toll, and it does not shrink when you pick a cheaper lane. `glm-grok` had the cheapest implementation in the matrix at $0.17 and still finished 1.81x.
+- **Harness choice moved cost 8.6x on one model.** Read the three `glm-5.2` rows: $0.17 through the Grok CLI, $0.48 through Codex, $1.47 through the Claude Code CLI, on identical work. Lane cost overall spanned 26x. No model-level benchmark captures this.
+- **The spread bought no quality.** All twelve passed the same gate, landing between 72 and 97 tests. The costliest lane, frontier-priced `claude-fable-5`, was not the best one; the cheapest implementation matched the baseline's test count.
 - Proxy-routed lanes report no cost of their own, because the proxy knows no pricing. Pitwall imputes those from `config/prices.json` and marks the row `imputed`, so a stale price table silently skews exactly those lanes.
 - Single samples. Wall clock for identical work ranged 5m to 23m, so treat neighbouring rows as ties and re-measure on your own task before acting.
 
