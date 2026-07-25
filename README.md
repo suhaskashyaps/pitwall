@@ -9,7 +9,7 @@
 
 </div>
 
-Your session acts as the architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness**: a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI. Third-party models join either through direct Anthropic-compatible endpoints or through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a separate proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `glm-grok` (a GLM model on xAI's CLI, routed through the local proxy) builds a rate limiter:
+Your session is the architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness**: a model paired with the CLI harness that drives it (xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI). Third-party models join through direct Anthropic-compatible endpoints or through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `glm-grok` (a GLM model on xAI's CLI, routed through the local proxy) builds a rate limiter:
 
 ```
 LANE REPORT (glm-grok)
@@ -27,13 +27,13 @@ The architect session never typed the code, and it doesn't take the lane's word 
 
 ## Why this exists
 
-Every vendor now ships its own agentic CLI, and the only way to know how a model-harness combination behaves on *your* tasks is to run it. Pitwall makes that a one-JSON-entry experiment. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec (objective, files, interfaces, constraints, verification), every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
+Every vendor now ships its own agentic CLI, and the only way to know how a model-harness combination behaves on *your* tasks is to run it. Pitwall makes that a one-JSON-entry experiment. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec (objective, files, interfaces, constraints, verification), and every result is independently verified before the architect accepts it. Adding a model-harness is one JSON entry.
 
-**What pitwall is not: a cost or quality optimizer.** In our own A/B runs on well-specified single-repo builds, the orchestration layer *lost* on cost, speed, and quality compared to just doing the task solo in one session, regardless of which model played architect. Coordination output, lane latency, and multi-lane authorship are overhead the task has to be large enough to absorb. Use pitwall to try model-harness combinations and measure what happens on your own work, not because delegation is presumed cheaper or better.
+**What pitwall is not: a cost or quality optimizer.** In our own A/B runs on well-specified single-repo builds, the orchestration layer *lost* on cost, speed, and quality compared to doing the task solo in one session, regardless of which model played architect. Coordination output, lane latency, and multi-lane authorship are overhead the task must be large enough to absorb. Use pitwall to try model-harness combinations and measure what happens on your own work, not because delegation is presumed cheaper or better.
 
 ## Dependencies
 
-The first two rows are the whole minimum setup: Claude Code itself doubles as the CLI behind the three claude-harness lanes, so with `jq` installed you already have a working lane (`claude-native`). Each row after that unlocks more lanes: install only what your lanes need. Preflight reports missing binaries and env vars; proxy connectivity and grok model blocks are separate checks.
+The first two rows are the minimum setup: Claude Code itself doubles as the CLI behind the three claude-harness lanes, so with `jq` installed you already have a working lane (`claude-native`). Each row after that unlocks more lanes: install only what your lanes need. Preflight reports missing binaries and env vars; proxy connectivity and grok model blocks are separate checks.
 
 | Dependency | Unlocks | Get it |
 |---|---|---|
@@ -87,7 +87,7 @@ MOONSHOT_API_KEY=…   MOONSHOT_BASE_URL=…   # kimi-cc (Moonshot)
 CLIPROXY_API_KEY=…                            # the 6 proxy-routed lanes
 ```
 
-For the proxy-routed lanes: install and start [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) with upstream accounts for the models you want it to serve (its README covers that), confirm it answers: `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8317/` should print `200`, then copy `config/grok-config.example.toml` to `~/.grok/config.toml` as-is. Skip all of this if you only use the direct lanes. Details: [docs/lanes.md](docs/lanes.md).
+For the proxy-routed lanes: install and start [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) with upstream accounts for the models you want it to serve (its README covers that). Confirm it answers: `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8317/` should print `200`. Then copy `config/grok-config.example.toml` to `~/.grok/config.toml` as-is. Skip all of this if you only use the direct lanes. Details: [docs/lanes.md](docs/lanes.md).
 
 Then check the fleet:
 
@@ -124,7 +124,7 @@ The session spawns `lane-runner` with the spec as its prompt. `LANE: claude-nati
 
 For multi-task builds, invoke the `pitwall:orchestration` skill and let the session route: independent specs fan out to parallel lanes, correctness-critical work goes cross-vendor, and high-stakes work races two lanes on the same spec.
 
-Add a lane by editing `~/.claude/pitwall/lanes.json`: no plugin change:
+Add a lane by editing `~/.claude/pitwall/lanes.json` (no plugin change):
 
 ```json
 "glm-cc": {
@@ -160,7 +160,7 @@ To pick a model for a lane, start from [Artificial Analysis](https://artificiala
 
 Measured once, on one machine, on the same trivial write task: directional, not a benchmark:
 
-- `claude-opus-4-8` used 143k tokens through the codex harness versus 67k through the grok harness on a single trivial write task. That result motivated pruning the Anthropic-on-codex pairings; harness choice moved cost more than model choice.
+- `claude-opus-4-8` used 143k tokens through the codex harness versus 67k through the grok harness. That result motivated pruning the Anthropic-on-codex pairings.
 - Codex defaults unrecognized models to `xhigh` reasoning effort; on the same task `grok-4.5` burned 96k tokens against `glm-5.2`'s 5.6k until pinned. Both proxy-routed codex lanes, `glm-codex` and `grok45-codex`, pin `model_reasoning_effort = medium`; `codex-gpt56` pins `high`.
 - `kimi-k3` omits trailing newlines on files it writes. Verification commands that exact-match `\n`-terminated strings fail against it; compare trimmed content.
 
