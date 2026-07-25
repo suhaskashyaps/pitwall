@@ -1,6 +1,6 @@
 ---
 name: orchestration
-description: Routing doctrine for the architect-as-orchestrator pattern: how the session model, whatever tier it runs, acts as architect and delegates implementation to a configurable fleet of model-harness lanes (grok, codex, claude harnesses, third-party models via env shims), with Fable-grade judgment reached through pinned agents (fable-advisor) rather than a required session model. USE WHEN deciding whether a task warrants orchestration at all, delegating implementation work, choosing a lane, writing a spec for a subagent, deciding whether to consult fable-advisor, managing architect token volume, or running any multi-task build where the session is the architect.
+description: Routing doctrine for the architect-as-orchestrator pattern, where the session model, whatever tier it runs, acts as architect and delegates implementation to a configurable fleet of model-harness lanes (grok, codex, claude harnesses, third-party models via env shims), with Fable-grade judgment reached through pinned agents (fable-advisor) rather than a required session model. USE WHEN deciding whether a task warrants orchestration at all, delegating implementation work, choosing a lane, writing a spec for a subagent, deciding whether to consult fable-advisor, managing architect token volume, or running any multi-task build where the session is the architect.
 ---
 
 # Orchestration: the architect's routing doctrine
