@@ -1,7 +1,7 @@
 {
   "name": "pitwall",
   "metadata": {
-    "description": "Local marketplace for the pitwall plugin (standalone fork of fable-advisor with config-driven lanes)."
+    "description": "Local marketplace for the pitwall plugin (a test bench for model-harness lanes)."
   },
   "owner": {
     "name": "Suhas"
@@ -10,7 +10,7 @@
     {
       "name": "pitwall",
       "source": "./",
-      "description": "Fable 5 orchestrator over a configurable fleet of implementation lanes (grok, codex, claude harnesses + third-party models via env shims)."
+      "description": "Test bench for model-harness lanes: your session architects, specs, and verifies; a configurable fleet of CLI lanes (grok, codex, claude harnesses + third-party models via env shims) implements. Includes A/B cost measurement so you can find the right pairing for your own tasks."
     }
   ]
 }
