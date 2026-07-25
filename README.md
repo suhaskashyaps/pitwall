@@ -2,14 +2,14 @@
 
 # pitwall
 
-**A test bench for model-harness lanes: your session specs, routes, and verifies; the lane you pick does the typing.**
+**A test bench for model-harness lanes: your session specs, routes, and verifies; the lane you pick writes the code.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-d97757.svg)](https://code.claude.com/docs)
 
 </div>
 
-Your session is the architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness**: a model paired with the CLI harness that drives it (xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI). Third-party models join through direct Anthropic-compatible endpoints or through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `glm-grok` (a GLM model on xAI's CLI, routed through the local proxy) builds a rate limiter:
+Your session is the architect: it decomposes work, writes specs, and judges evidence. Lanes write the code. A lane is a config entry naming a **model-harness**: a model paired with the CLI harness that drives it (xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI). Third-party models join through direct Anthropic-compatible endpoints or through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `glm-grok` (a GLM model on xAI's CLI, routed through the local proxy) builds a rate limiter:
 
 ```
 LANE REPORT (glm-grok)
