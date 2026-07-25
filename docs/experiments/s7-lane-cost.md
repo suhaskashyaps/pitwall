@@ -115,7 +115,21 @@ ab-run --task "<your task>" --target <seed dir> \
        --verify "<your gate command>"
 ```
 
-Then run one baseline leg with `--skip-pitwall` under its own experiment id.
+Then run one baseline leg with `--skip-pitwall` under its own experiment id, and
+join the results into one table:
+
+```shell
+pitwall_compare.py \
+  "baseline=<baseline-experiment>=solo" \
+  "<lane>=<lane-experiment>=lane" ... \
+  --verify "<your gate command>"
+```
+
+`ab-run`'s own report compares the two legs inside a single experiment. A sweep
+is the other shape, N experiments of one leg each, which `pitwall_compare.py`
+joins. It re-runs your gate per leg rather than trusting any leg's report, and
+flags legs whose captures went missing so an under-reported row cannot pass as a
+cheap one.
 
 Four things that matter more than they look:
 

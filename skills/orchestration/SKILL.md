@@ -51,6 +51,25 @@ Choosing between vendor families is not a capability ranking: it is a failure-di
 
 When a lane returns `STATUS: unavailable`, report it to the user and re-route the same spec to the next adequate lane by tier. Never silently absorb a substitution. If every edit-capable lane is unavailable, say so plainly and either use a suggest-only lane for a draft or implement with a Claude subagent, explicitly stating the downgrade.
 
+## Measuring a lane instead of guessing
+
+The lane rankings above are defaults, not findings about your work. When the
+choice matters, measure it: `scripts/ab-run` runs one task through a pinned lane
+and a plain session under one experiment id, and `scripts/pitwall_compare.py`
+joins several such runs into one table of cost, wall clock, and gate result.
+
+Three rules make the numbers mean anything:
+
+- **Always pass `--verify`.** A lane that fails is the cheapest lane on the
+  table, and its own report will still read as success.
+- **Hold the architect model constant** across the legs you compare. Architect
+  cost dominates most legs, so a varying architect hides the lane difference.
+- **One dispatch is not a ranking.** Wall clock on identical work has varied
+  more than twofold between lanes; treat close rows as ties.
+
+`docs/experiments/s7-lane-cost.md` is a worked example across every shipped
+lane, including the result that every lane cost more than not orchestrating.
+
 ## The spec contract
 
 Implementers share none of your conversation context. Every delegation prompt carries all five parts:
