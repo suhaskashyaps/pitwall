@@ -1,10 +1,10 @@
 # Architecture
 
-Pitwall makes a Fable 5 session an architect over cheaper external CLI agents ("lanes"), so premium tokens buy judgment and volume lands elsewhere.
+Pitwall makes your session an architect over external CLI agents ("lanes"): the session's tokens buy judgment, and implementation volume lands in whichever model-harness you route it to.
 
 ## Premise
 
-The session runs the most expensive model as the architect. Its tokens go to decomposition, specs, routing, and verdicts. Implementation volume goes to lanes: named model-harness combinations (a model paired with the CLI harness that drives it), driven headlessly under a shared contract. The economics only work if the architect's token volume stays low: emit judgment, keep context lean, reason once then hand off. Typing implementation code in the architect is a failure of the pattern.
+The session, whatever model it runs, is the architect. Its tokens go to decomposition, specs, routing, and verdicts. Implementation volume goes to lanes: named model-harness combinations (a model paired with the CLI harness that drives it), driven headlessly under a shared contract. The pattern only stays legible if the architect's token volume stays low: emit judgment, keep context lean, reason once then hand off. Typing implementation code in the architect is a failure of the pattern.
 
 ## Three components
 
@@ -30,7 +30,7 @@ Implementers share none of the architect's conversation context. Every delegatio
 4. **Constraints**: conventions and things not to touch
 5. **Verification**: the command(s) that prove it works
 
-A spec you cannot finish writing means the decision is not made yet. That is architect work, not a reason to hand ambiguity to a cheaper model.
+A spec you cannot finish writing means the decision is not made yet. That is architect work, not a reason to hand ambiguity to an implementer.
 
 ## LANE REPORT
 
@@ -67,4 +67,4 @@ When a lane cannot run (missing binary, missing env source, unknown id, cancelle
 
 - No fallback implementation by the dispatcher when a lane is unavailable.
 - No automatic lane failover without reporting: every substitution is an explicit orchestrator decision.
-- No support for running the architect on a cheaper model. The session is Fable 5 by design; the premium is for judgment, not for typing volume.
+- No promise that delegation is cheaper or better than working solo. In our own A/B runs on well-specified single-repo builds, the orchestration layer lost on cost, speed, and quality regardless of which model played architect; the orchestration skill's task-shape gate exists for exactly that reason.

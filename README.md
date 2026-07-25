@@ -2,14 +2,14 @@
 
 # pitwall
 
-**A frontier architect specs, routes, and verifies; the best $/task model-harness does the typing.**
+**A test bench for model-harness lanes: your session specs, routes, and verifies; the lane you pick does the typing.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-d97757.svg)](https://code.claude.com/docs)
 
 </div>
 
-Your session runs the expensive model as an architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness**: a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI. Third-party models join either through direct Anthropic-compatible endpoints or through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a separate proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `glm-grok` (a GLM model on xAI's CLI, routed through the local proxy) builds a rate limiter:
+Your session acts as the architect: it decomposes work, writes specs, and judges evidence. The typing happens in lanes. A lane is a config entry naming a **model-harness**: a model paired with the CLI harness that drives it: xAI's Grok CLI, OpenAI's Codex CLI, Anthropic's Claude Code CLI. Third-party models join either through direct Anthropic-compatible endpoints or through [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), a separate proxy you run locally. You name a lane and hand over a spec; the `lane-runner` agent drives that model-harness headlessly, verifies the result itself, and reports evidence. Here, `glm-grok` (a GLM model on xAI's CLI, routed through the local proxy) builds a rate limiter:
 
 ```
 LANE REPORT (glm-grok)
@@ -27,7 +27,9 @@ The architect session never typed the code, and it doesn't take the lane's word 
 
 ## Why this exists
 
-A frontier-model session spends most of its tokens typing code that doesn't need frontier judgment. The judgment (decomposition, interface design, verdicts on diffs) is worth the premium; the volume is not. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec (objective, files, interfaces, constraints, verification), every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
+Every vendor now ships its own agentic CLI, and the only way to know how a model-harness combination behaves on *your* tasks is to run it. Pitwall makes that a one-JSON-entry experiment. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec (objective, files, interfaces, constraints, verification), every result is independently verified before the architect accepts it, and adding a model-harness is one JSON entry.
+
+**What pitwall is not: a cost or quality optimizer.** In our own A/B runs on well-specified single-repo builds, the orchestration layer *lost* on cost, speed, and quality compared to just doing the task solo in one session, regardless of which model played architect. Coordination output, lane latency, and multi-lane authorship are overhead the task has to be large enough to absorb. Use pitwall to try model-harness combinations and measure what happens on your own work, not because delegation is presumed cheaper or better.
 
 ## Dependencies
 
@@ -48,7 +50,7 @@ Two steps are human-only: creating vendor API keys and each CLI's sign-in flow. 
 
 ## What you get
 
-- **`orchestration` skill**: the routing doctrine: decompose, write five-part specs, route each task to the best $/task lane that's adequate for it, verify evidence, consult the advisor at commitment boundaries.
+- **`orchestration` skill**: the routing doctrine: gate on task shape first (it tells you when *not* to orchestrate), decompose, write five-part specs, route each task to a deliberately chosen lane, verify evidence, consult the advisor at commitment boundaries.
 - **`lane-runner` agent**: one generic dispatcher. Resolves a lane from `lanes.json`, preflights the harness, invokes it headlessly with per-lane env, verifies independently, reports in the fixed `LANE REPORT` format: every report names the model-harness it ran.
 - **`fable-advisor` agent**: a read-only second-opinion advisor for commitment boundaries. It advises; it never implements.
 - **`lanes.json`**: the fleet, in user config. Add, remove, or repoint lanes by editing one file.
@@ -165,7 +167,7 @@ Measured once, on one machine, on the same trivial write task: directional, not 
 ## Alternatives
 
 - [claude-code-router](https://github.com/musistudio/claude-code-router) routes the API requests behind your session and wins on infrastructure: fallbacks, key rotation, per-request observability, a web UI. It has no concept of specs, lanes, or an architect verifying a diff: the reasoning stays in whatever agent you're sitting in.
-- [aider's architect/editor mode](https://aider.chat/docs/usage/modes.html) is the same economic idea, built-in and zero-config, with a proven per-edit cost split. The split lives inside one tool at one API layer: no independent agentic harnesses, no separate verification step, and you leave the Claude Code environment.
+- [aider's architect/editor mode](https://aider.chat/docs/usage/modes.html) is the same delegation idea, built-in and zero-config, with a proven per-edit split. The split lives inside one tool at one API layer: no independent agentic harnesses, no separate verification step, and you leave the Claude Code environment.
 - Claude Code's native subagents give per-agent model selection with zero external dependencies, and pitwall builds on them. Alone, they stay within Anthropic models and enforce no spec or verification contract.
 
 Pitwall's trade: cross-vendor agentic harnesses as first-class delegation targets with enforced verification, at the cost of installing and authenticating each lane's CLI, and bringing your own gateway for proxy lanes.
