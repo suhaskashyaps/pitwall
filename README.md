@@ -29,7 +29,19 @@ The architect session never typed the code, and it doesn't take the lane's word 
 
 Every vendor now ships its own agentic CLI, and the only way to know how a model-harness combination behaves on *your* tasks is to run it. Pitwall makes that a one-JSON-entry experiment. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec (objective, files, interfaces, constraints, verification), and every result is independently verified before the architect accepts it. Adding a model-harness is one JSON entry.
 
-**What pitwall is not: a cost or quality optimizer.** In our own A/B runs on well-specified single-repo builds, the orchestration layer *lost* on cost, speed, and quality compared to doing the task solo in one session, regardless of which model played architect. Coordination output, lane latency, and multi-lane authorship are overhead the task must be large enough to absorb. Use pitwall to try model-harness combinations and measure what happens on your own work, not because delegation is presumed cheaper or better.
+**What pitwall is not: a cost or quality optimizer.** In our own A/B runs on well-specified single-repo builds, the orchestration layer *lost* on cost, speed, and quality compared to doing the task solo in one session, regardless of which model played architect. Coordination output, lane latency, and multi-lane authorship are overhead the task must be large enough to absorb. Use pitwall to try model-harness combinations and measure what happens on your own work, not because delegation is presumed cheaper or better. See [Findings](#findings) for the run that measured it.
+
+## Findings
+
+Three results from running the same seeded task across every configured lane, one lane at a time, against a solo control. Numbers, method, and caveats: [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md).
+
+**The architect is the cost floor, not the lane.** Coordination overhead was the majority of most legs, and it does not shrink when you pick a cheaper lane. The cheapest implementation in the matrix still produced a leg that cost more than not orchestrating at all. This is the finding that should decide whether you orchestrate a given task: delegation has to clear a fixed toll before a cheaper model can pay you back.
+
+**Harness choice moves cost as much as model choice.** The same model, run through three different CLI harnesses, spanned roughly an order of magnitude in cost on identical work. No model-level benchmark captures this, which is the gap this tool exists to fill: shortlist the model from public evals, then measure the pairing yourself.
+
+**Cost is meaningless without a gate.** Mid-sweep, the two cheapest-looking legs were cheap because they had failed: one never reached its vendor, the other was blocked from writing files and produced nothing. Both looked like bargains in the cost column. A lane that does no work always wins on price, and a leg's own report will still call it a success. Pass `--verify` so a cost is only comparable once its gate passed, and re-run the gate yourself rather than believing the leg.
+
+One caution on reading any of this, ours or yours: a single run per lane cannot rank neighbours. Wall clock for identical work varied by more than 2x between lanes, and list prices change under you. Treat close results as ties.
 
 ## Dependencies
 
@@ -156,13 +168,37 @@ Add a lane by editing `~/.claude/pitwall/lanes.json` (no plugin change):
 
 ### Cost notes
 
-To pick a model for a lane, start from [Artificial Analysis](https://artificialanalysis.ai): its Intelligence Index scores models on a common eval battery, and its cost-to-run-the-index figure works as a $/task proxy. A model earns a lane when it clears the quality bar for your task class at the lowest cost per task. Then measure on your own harnesses: in our samples, harness choice moved cost more than model choice, which no model-level benchmark captures. Benchmarks shortlist the model; a live dispatch through the lane picks the harness.
+To pick a model for a lane, start from [Artificial Analysis](https://artificialanalysis.ai): its Intelligence Index scores models on a common eval battery, and its cost-to-run-the-index figure works as a $/task proxy. A model earns a lane when it clears the quality bar for your task class at the lowest cost per task. Benchmarks shortlist the model; a live dispatch through the lane picks the harness (see [Findings](#findings)).
 
-Measured once, on one machine, on the same trivial write task: directional, not a benchmark:
+Two traps that cost real money and are invisible from the config alone:
 
-- `claude-opus-4-8` used 143k tokens through the codex harness versus 67k through the grok harness. That result motivated pruning the Anthropic-on-codex pairings.
-- Codex defaults unrecognized models to `xhigh` reasoning effort; on the same task `grok-4.5` burned 96k tokens against `glm-5.2`'s 5.6k until pinned. Both proxy-routed codex lanes, `glm-codex` and `grok45-codex`, pin `model_reasoning_effort = medium`; `codex-gpt56` pins `high`.
+- Codex silently defaults an unrecognized model to `xhigh` reasoning effort, which can burn an order of magnitude more tokens than the same task needs. Pin `model_reasoning_effort` on every codex lane; the shipped lanes already do.
 - `kimi-k3` omits trailing newlines on files it writes. Verification commands that exact-match `\n`-terminated strings fail against it; compare trimmed content.
+
+Every configured lane on one seeded build task (a 12-resource registry with referential integrity behind a deterministic gate), one dispatch each, architect held constant at `claude-sonnet-5`, against a solo control. All twelve legs passed both gates. Prices as of 2026-07-26.
+
+| lane | lane $ | architect $ | total $ | vs solo | wall clock |
+|---|---|---|---|---|---|
+| *solo control* | *n/a* | *n/a* | *1.13* | *1.00x* | *4m02s* |
+| `glm-codex` | 0.48 | 0.86 | 1.34 | 1.18x | 9m15s |
+| `codex-gpt56` | 0.65 | 0.78 | 1.43 | 1.26x | 5m10s |
+| `grok45-codex` | 0.47 | 1.04 | 1.52 | 1.34x | 6m50s |
+| `sonnet5-grok` | 0.67 | 0.98 | 1.65 | 1.46x | 8m25s |
+| `kimi-cc` | 0.83 | 0.88 | 1.71 | 1.52x | 9m01s |
+| `glm-grok` | **0.17** | 1.87 | 2.04 | 1.81x | 22m41s |
+| `grok` | 0.37 | 1.80 | 2.17 | 1.92x | 8m41s |
+| `glm-cc` | 1.47 | 0.89 | 2.36 | 2.09x | 8m34s |
+| `gpt56-grok` | 1.21 | 1.37 | 2.58 | 2.29x | 12m02s |
+| `opus48-grok` | 1.25 | 1.53 | 2.78 | 2.46x | 8m13s |
+| `claude-native` | 4.47 | 0.83 | 5.30 | 4.69x | 8m27s |
+
+How to read it:
+
+- **Every lane cost more than not orchestrating.** The cheapest total still ran 1.18x the solo control. Sort by `lane $` and the ordering changes completely, which is the point: the architect column is the toll, and it does not shrink when you pick a cheaper lane. `glm-grok` had the cheapest implementation in the matrix at $0.17 and still finished 1.81x.
+- **Harness choice moved cost 8.6x on one model.** `glm-5.2` ran $0.17 through the grok CLI, $0.48 through codex, $1.47 through the Claude CLI. Lane cost overall spanned 26x. No model-level benchmark captures this.
+- **The spread bought no quality.** All twelve passed the same gate, landing between 72 and 97 tests. The most expensive lane was not the best one.
+- Proxy-routed lanes report no cost of their own, because the proxy knows no pricing. Pitwall imputes those from `config/prices.json` and marks the row `imputed`, so a stale price table silently skews exactly those lanes.
+- Single samples. Wall clock for identical work ranged 5m to 23m, so treat neighbouring rows as ties and re-measure on your own task before acting.
 
 ## Alternatives
 
@@ -177,6 +213,7 @@ Pitwall's trade: cross-vendor agentic harnesses as first-class delegation target
 - [docs/architecture.md](docs/architecture.md): the design rationale and invariants
 - [docs/lanes.md](docs/lanes.md): full `lanes.json` schema, per-harness wiring, proxy setup
 - [docs/verification.md](docs/verification.md): install-verification runbook, including the live dispatch test
+- [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md): the lane-cost run behind [Findings](#findings), with method and caveats
 
 ## Contributing, license, credits
 
