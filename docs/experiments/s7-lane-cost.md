@@ -8,6 +8,16 @@ It is a case study, not a benchmark. One dispatch per lane, one machine, one day
 one task. Read it for method and for the shape of the result, and re-measure on
 your own work before acting on it.
 
+> **Read [s8-variance.md](s8-variance.md) before quoting the ordering below.** A
+> follow-up ran three of these lanes three times each, plus three repeats of the
+> baseline. Every lane's cost range overlapped its neighbour's, and each lane varied
+> 1.46x to 1.85x against itself: more than the gaps between adjacent rows here. The
+> baseline measured once below is also a single draw that fell outside the range of
+> three fresh ones, and every ratio in this document is divided by it. The two claims
+> that survive repetition are that harness choice moves cost as much as model choice,
+> and that a cost means nothing without a gate. Treat the row ordering, and the
+> "every lane cost more than solo" headline, as one draw rather than a result.
+
 ## What was measured
 
 The seed is a build task with a deterministic acceptance gate: an in-memory

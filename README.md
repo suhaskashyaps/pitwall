@@ -29,19 +29,48 @@ The architect session never typed the code, and it doesn't take the lane's word 
 
 Every vendor now ships its own agentic CLI, and the only way to know how a model-harness combination behaves on *your* tasks is to run it. Pitwall makes that a one-JSON-entry experiment. Model routers like claude-code-router swap the model behind your session's API calls, and aider's architect mode splits planning from editing inside one tool. Neither treats other vendors' own agentic CLIs as delegation targets. Pitwall does: each lane is a real harness with its own agentic loop, every task carries a five-part spec (objective, files, interfaces, constraints, verification), and every result is independently verified before the architect accepts it. Adding a model-harness is one JSON entry.
 
-**What pitwall is not: a cost or quality optimizer.** In our own A/B runs on well-specified single-repo builds, the orchestration layer *lost* on cost, speed, and quality compared to doing the task solo in one session, regardless of which model played architect. Coordination output, lane latency, and multi-lane authorship are overhead the task must be large enough to absorb. Use pitwall to try model-harness combinations and measure what happens on your own work, not because delegation is presumed cheaper or better. See [Findings](#findings) for the run that measured it.
+**What pitwall is not: a cost or quality optimizer.** In our own A/B runs on well-specified single-repo builds, the orchestration layer never *won*: it lost on speed and quality against doing the task solo in one session, and on cost it ranged from a clear loss to a tie, with one lane out of eleven coming in separably cheaper. Coordination output, lane latency, and multi-lane authorship are overhead the task must be large enough to absorb. Use pitwall to try model-harness combinations and measure what happens on your own work, not because delegation is presumed cheaper or better. See [Findings](#findings) for the runs that measured it.
 
 ## Findings
 
-Three results from running the same seeded task across every configured lane, one lane at a time, against a baseline session that used no orchestration. Numbers, method, and caveats: [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md).
+Two experiments on the same seeded task: a sweep across every configured lane, one run each
+([docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md)), then three repeats of
+three lanes plus three repeats of the no-orchestration control
+([docs/experiments/s8-variance.md](docs/experiments/s8-variance.md)).
 
-**The architect is the cost floor, not the lane.** Coordination overhead was the majority of most legs, and it does not shrink when you pick a cheaper lane. The cheapest implementation in the matrix still produced a leg that cost more than not orchestrating at all. This is the finding that should decide whether you orchestrate a given task: delegation has to clear a fixed toll before a cheaper model can pay you back.
+**One run per lane cannot rank lanes.** Repeating three lanes three times each, every lane's
+cost range overlapped its neighbour's. Each lane varied 1.46x to 1.85x against itself while
+adjacent lane means sat $0.24 to $0.27 apart, so the run-to-run noise was roughly twice the
+difference being ranked. Rank order even flipped between rounds. If you take one measurement
+of a lane and one of its neighbour, you have not learned which is cheaper.
 
-**Harness choice moves cost as much as model choice.** The same model, run through three different CLI harnesses, spanned roughly an order of magnitude in cost on identical work. No model-level benchmark captures this, which is the gap this tool exists to fill: shortlist the model from public evals, then measure the pairing yourself.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/experiments/img/s8-cost-variance-dark.svg">
+  <img alt="Cost to complete the same task once, three runs per lane plus three runs of the no-orchestration control. Each dot is one run, the bar spans that lane's cheapest to priciest run, the vertical tick is its mean, and the shaded column is the control's own range. Only glm-codex sits entirely outside the control range." src="docs/experiments/img/s8-cost-variance-light.svg">
+</picture>
 
-**Cost is meaningless without a gate.** Mid-sweep, the two cheapest-looking legs were cheap because they had failed: one never reached its vendor, the other was blocked from writing files and produced nothing. Both looked like bargains in the cost column. A lane that does no work always wins on price, and a leg's own report will still call it a success. Pass `--verify` so a cost is only comparable once its gate passed, and re-run the gate yourself rather than believing the leg.
+**Harness choice moves cost as much as model choice.** The same model, run through three
+different CLI harnesses, spanned roughly an order of magnitude in cost on identical work. No
+model-level benchmark captures this, which is the gap this tool exists to fill: shortlist the
+model from public evals, then measure the pairing yourself.
 
-One caution on reading any of this, ours or yours: a single run per lane cannot rank neighbours. Wall clock for identical work varied by more than 2x between lanes, and list prices change under you. Treat close results as ties.
+**Cost is meaningless without a gate.** Mid-sweep, the two cheapest-looking legs were cheap
+because they had failed: one never reached its vendor, the other was blocked from writing files
+and produced nothing. Both looked like bargains in the cost column. A lane that does no work
+always wins on price, and a leg's own report will still call it a success. Pass `--verify` so a
+cost is only comparable once its gate passed, and re-run the gate yourself rather than believing
+the leg.
+
+**Orchestration has to clear the architect's cost before a cheaper lane pays you back.** Every
+orchestrated leg pays two models: an architect that plans and delegates, and a lane that
+implements. The architect is not a fixed toll (it ranged $0.78 to $1.66 across repeats of the
+same three lanes) and it is frequently the majority of a leg. Across both experiments, one
+lane out of eleven came in separably cheaper than not orchestrating at all. Orchestrate a task
+because it is too large for one session, not because delegation is presumed cheaper.
+
+**So measure your own tasks, and repeat the measurement.** Run at least three repeats per lane
+before believing a gap, hold a system-sleep assertion for the length of a sweep, and treat
+overlapping ranges as ties. A single-run cost table, ours included, ranks noise.
 
 ## Dependencies
 
@@ -250,7 +279,8 @@ Pitwall's trade: cross-vendor agentic harnesses as first-class delegation target
 - [docs/architecture.md](docs/architecture.md): the design rationale and invariants
 - [docs/lanes.md](docs/lanes.md): full `lanes.json` schema, per-harness wiring, proxy setup
 - [docs/verification.md](docs/verification.md): install-verification runbook, including the live dispatch test
-- [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md): the lane-cost run behind [Findings](#findings), with method and caveats
+- [docs/experiments/s7-lane-cost.md](docs/experiments/s7-lane-cost.md): the eleven-lane cost sweep, one run each, with method and caveats
+- [docs/experiments/s8-variance.md](docs/experiments/s8-variance.md): three repeats per lane, showing which of those differences survive
 
 ## Contributing, license, credits
 

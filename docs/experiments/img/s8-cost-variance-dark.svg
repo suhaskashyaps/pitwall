@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="306" viewBox="0 0 760 306" role="img" aria-label="Dollars to complete the task once. Three orchestrated lanes and the solo control, three runs each. glm-codex (glm-5.2 on codex) is the only row whose entire range falls outside the control range.">
+  <rect x="0" y="0" width="760" height="306" fill="#161b23"/>
+
+  <!-- control range band -->
+  <rect x="415.5" y="38" width="251.2" height="200" fill="#d95926" fill-opacity="0.12"/>
+  <text x="541" y="30" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" letter-spacing="0.6" fill="#d95926">CONTROL RANGE: $1.57 TO $2.31</text>
+  <line x1="415.5" y1="38" x2="415.5" y2="238" stroke="#d95926" stroke-width="1" stroke-dasharray="3 3" opacity="0.75"/>
+  <line x1="666.7" y1="38" x2="666.7" y2="238" stroke="#d95926" stroke-width="1" stroke-dasharray="3 3" opacity="0.75"/>
+
+  <!-- grid -->
+  <g stroke="#262e39" stroke-width="1">
+    <line x1="223.75" y1="44" x2="223.75" y2="246"/>
+    <line x1="308.13" y1="44" x2="308.13" y2="246"/>
+    <line x1="392.50" y1="44" x2="392.50" y2="246"/>
+    <line x1="476.88" y1="44" x2="476.88" y2="246"/>
+    <line x1="561.25" y1="44" x2="561.25" y2="246"/>
+    <line x1="645.63" y1="44" x2="645.63" y2="246"/>
+    <line x1="730.00" y1="44" x2="730.00" y2="246"/>
+  </g>
+
+  <!-- glm-codex -->
+  <text x="180" y="74" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#eef1f5">glm-codex</text>
+  <text x="180" y="88" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8593a3">glm-5.2 · codex</text>
+  <rect x="234.4" y="68" width="160.5" height="4" rx="2" fill="#3987e5" fill-opacity="0.32"/>
+  <line x1="315.9" y1="58" x2="315.9" y2="82" stroke="#3987e5" stroke-width="2"/>
+  <circle cx="234.4" cy="70" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+  <circle cx="318.3" cy="70" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+  <circle cx="394.9" cy="70" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+
+  <!-- grok45-codex -->
+  <text x="180" y="119" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#eef1f5">grok45-codex</text>
+  <text x="180" y="133" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8593a3">grok-4.5 · codex</text>
+  <rect x="308.1" y="113" width="277.5" height="4" rx="2" fill="#3987e5" fill-opacity="0.32"/>
+  <line x1="408.4" y1="103" x2="408.4" y2="127" stroke="#3987e5" stroke-width="2"/>
+  <circle cx="308.1" cy="115" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+  <circle cx="331.4" cy="115" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+  <circle cx="585.6" cy="115" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+
+  <!-- sonnet5-grok -->
+  <text x="180" y="164" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#eef1f5">sonnet5-grok</text>
+  <text x="180" y="178" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8593a3">claude-sonnet-5 · grok</text>
+  <rect x="318.8" y="158" width="365.7" height="4" rx="2" fill="#3987e5" fill-opacity="0.32"/>
+  <line x1="491.1" y1="148" x2="491.1" y2="172" stroke="#3987e5" stroke-width="2"/>
+  <circle cx="318.8" cy="160" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+  <circle cx="469.9" cy="160" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+  <circle cx="684.5" cy="160" r="5" fill="#3987e5" stroke="#161b23" stroke-width="2"/>
+
+  <line x1="190" y1="194" x2="730" y2="194" stroke="#38424f" stroke-width="1"/>
+
+  <!-- solo control -->
+  <text x="180" y="220" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#eef1f5">solo</text>
+  <text x="180" y="234" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8593a3">claude-sonnet-5 · claude</text>
+  <rect x="415.5" y="214" width="251.2" height="4" rx="2" fill="#d95926" fill-opacity="0.32"/>
+  <line x1="501.3" y1="204" x2="501.3" y2="228" stroke="#d95926" stroke-width="2"/>
+  <circle cx="415.5" cy="216" r="5" fill="#d95926" stroke="#161b23" stroke-width="2"/>
+  <circle cx="421.6" cy="216" r="5" fill="#d95926" stroke="#161b23" stroke-width="2"/>
+  <circle cx="666.7" cy="216" r="5" fill="#d95926" stroke="#161b23" stroke-width="2"/>
+
+  <!-- axis -->
+  <line x1="190" y1="246" x2="730" y2="246" stroke="#38424f" stroke-width="1"/>
+  <g text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#8593a3">
+    <text x="223.75" y="262">$1.00</text>
+    <text x="308.13" y="262">$1.25</text>
+    <text x="392.50" y="262">$1.50</text>
+    <text x="476.88" y="262">$1.75</text>
+    <text x="561.25" y="262">$2.00</text>
+    <text x="645.63" y="262">$2.25</text>
+    <text x="730.00" y="262">$2.50</text>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" letter-spacing="1.2" fill="#8593a3">
+    <text x="190" y="288">&#8592; CHEAPER</text>
+    <text x="460" y="288" text-anchor="middle">USD TO COMPLETE THE TASK ONCE</text>
+    <text x="730" y="288" text-anchor="end">MORE EXPENSIVE &#8594;</text>
+  </g>
+</svg>
