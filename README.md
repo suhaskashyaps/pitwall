@@ -68,6 +68,26 @@ same three lanes) and it is frequently the majority of a leg. Across both experi
 lane out of eleven came in separably cheaper than not orchestrating at all. Orchestrate a task
 because it is too large for one session, not because delegation is presumed cheaper.
 
+### One run in full
+
+A single A/B on the same seeded task (2026-07-26), kept here as a worked example of what one
+measurement looks like when the lane does win — not as a ranking. Both legs passed the same
+gate before costs were compared.
+
+| leg | model · harness | input | cache_read | cache_write | output | cost USD |
+|---|---|---|---|---|---|---|
+| solo (control) | claude-fable-5 · claude | 18 | 481,198 | 151,023 | 23,456 | 4.674638 |
+| pitwall total | the two rows below | 124,106 | 1,700,724 | 121,244 | 41,324 | 1.500958 |
+| — architect | claude-sonnet-5 · claude | 30 | 493,300 | 121,244 | 12,753 | 0.887608 |
+| — lane | glm-5.2 · codex | 124,076 | 1,207,424 | 0 | 28,571 | 0.613349 |
+
+The orchestrated leg cost 0.32x the control: the implementation tokens landed on glm-5.2
+pricing instead of the control's claude-fable-5, and that gap absorbed the architect's $0.89.
+Read it alongside the variance finding above before concluding anything: this control ran a
+pricier model than the S8 control (claude-fable-5 vs claude-sonnet-5), and it is one run of
+the one lane the sweeps already found separably cheap. Reproduce the shape of this table on
+your own task with the bake-off recipe under [Usage](#usage).
+
 **So measure your own tasks, and repeat the measurement.** Run at least three repeats per lane
 before believing a gap, hold a system-sleep assertion for the length of a sweep, and treat
 overlapping ranges as ties. A single-run cost table, ours included, ranks noise.
