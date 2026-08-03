@@ -47,6 +47,14 @@ Deciding rule: how much does the outcome depend on judgment the spec can't captu
 
 Choosing between vendor families is not a capability ranking: it is a failure-distribution question. Any lane from a different family gives the architect genuine cross-vendor review; racing lanes from different vendor families buys a third independent perspective for one extra lane's dispatch.
 
+## Authenticated systems: when a lane is the wrong route
+
+Lanes run their harnesses headlessly under restricted permission modes: they can edit files but cannot run arbitrary shell commands, have no prompt channel, and cannot reach the network beyond their model API. A task that needs an authenticated internal system **during execution** — querying a database to decide what to write, deploying an app, pulling data through a company CLI or MCP server — cannot run in a lane, and worse, a blocked lane can silently fake a "resolved" result. Route those tasks to a session subagent instead: subagents inherit the session's permission mode and OS-level auth (config files, keychains, logged-in CLIs), so everything available at the terminal is available to them with zero configuration.
+
+A task that is pure code implementation whose **verification command** hits an authenticated CLI is still fine for a lane. Lane-runner is the sole verifier by design and re-runs the verification command itself, with the session's auth, after the lane finishes.
+
+Do not fix this by weakening the lane sandbox. Allowlisting internal CLIs for headless lanes was considered and rejected: it violates the lane-runner doctrine (never an always-approve flag, and lane-runner places its own permission-mode flag after `extra_flags` so a lane entry cannot override it), and it moves live credentials inside the one layer that exists precisely because headless lanes can fake success when blocked. The division of labor stands: the lane writes the code, lane-runner runs verification with your permissions and reports evidence, the architect judges the report.
+
 ## Lane health
 
 When a lane returns `STATUS: unavailable`, report it to the user and re-route the same spec to the next adequate lane by tier. Never silently absorb a substitution. If every edit-capable lane is unavailable, say so plainly and either use a suggest-only lane for a draft or implement with a Claude subagent, explicitly stating the downgrade.
