@@ -249,11 +249,30 @@ if [[ -n "$VERIFY" && "$SKIP_SOLO" -eq 1 && "$SKIP_PITWALL" -eq 1 ]]; then
   echo "ab-run: WARNING: --verify was given but both legs were skipped; no gate ran" >&2
 fi
 
+# Langfuse is optional: without it the legs and gates above are the whole
+# result, and failing the run over a missing trace store would punish the
+# default setup. Mirror the tracer's own config lookup (env, then ~/.claude/.env)
+# and skip ingest cleanly when it comes up empty. --ingest-only asks for the
+# ingest explicitly, so that path still fails loudly through the tracer.
+langfuse_configured() {
+  local v
+  for v in LANGFUSE_HOST LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY; do
+    [[ -n "${!v:-}" ]] && continue
+    grep -q "^${v}=." "$HOME/.claude/.env" 2>/dev/null || return 1
+  done
+}
+
 # A leg crash must surface as EX_LEG_FAILED, not as the ingest's exit 2, which
 # is the documented "usage error". Capture the status instead of letting set -e
 # abort here, then let the most informative code win below.
 ingest_rc=0
-ingest_and_report "$EXP" "$RUN/solo/solo.json" "$RUN/pitwall" || ingest_rc=$?
+if langfuse_configured; then
+  ingest_and_report "$EXP" "$RUN/solo/solo.json" "$RUN/pitwall" || ingest_rc=$?
+else
+  echo "ab-run: Langfuse not configured (LANGFUSE_HOST/LANGFUSE_PUBLIC_KEY/LANGFUSE_SECRET_KEY); skipping trace ingest and cost report" >&2
+  echo "ab-run: run data retained at $RUN; after configuring Langfuse, ingest with:" >&2
+  echo "ab-run:   $0 --ingest-only --experiment $EXP --run-dir $RUN/pitwall --solo-json $RUN/solo/solo.json" >&2
+fi
 
 if [[ "${solo_rc:-0}" -ne 0 || "${pitwall_rc:-0}" -ne 0 ]]; then
   echo "ab-run: a leg's harness exited nonzero (solo=${solo_rc:-0} pitwall=${pitwall_rc:-0})" >&2

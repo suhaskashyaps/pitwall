@@ -92,7 +92,7 @@ Two steps are human-only: creating vendor API keys and each CLI's sign-in flow. 
 - **`scripts/pitwall_compare.py`**: joins several single-lane experiments plus a baseline into one table of cost, wall clock and gate result. This is the bake-off.
 - **`scripts/preflight-all.sh`**: a lane health matrix that blocks lanes whose binary, credentials, proxy, or price entry are missing before you spend anything.
 
-Langfuse is optional. `pitwall_trace.py ingest-lane --dry-run` prints the priced trace as JSON with no server running; only posting and the cross-leg report need an instance, and a compose file for a local stack ships in `observability/langfuse/` (tear it down when idle, it will slow a laptop).
+Langfuse is optional, and know what you are signing up for before starting it: the local stack is six containers (web, worker, Postgres, ClickHouse, Redis, MinIO) that hold multiple GB of RAM for as long as they run and will noticeably slow a laptop. Nothing in the core loop needs it — lane dispatch, verification, and `ab-run`'s legs and gates all run without it (`ab-run` says so and skips trace ingest when no `LANGFUSE_*` config is present, retaining the run data for later ingest). Only storing traces and the cross-leg cost report need an instance; `pitwall_trace.py ingest-lane --dry-run` prints the priced trace as JSON with no server at all. The compose file ships in `observability/langfuse/` — tear the stack down when idle.
 
 ## Install
 
